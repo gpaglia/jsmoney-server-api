@@ -1,7 +1,7 @@
 {
   "version": "2.1.5",
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "CommonJS",
     "target": "es6",
     "noImplicitAny": true,
     "sourceMap": true,
@@ -9,18 +9,18 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "noEmit": true,
+    "noEmit": false,
     "noEmitHelpers": true,
     "strictNullChecks": false,
     "outDir": "dist",
-    "rootDir": ".",
+    "rootDir": "./src",
     "declaration": true,
     "preserveConstEnums": true
   },
   "compileOnSave": true,
   "buildOnSave": true,
   "atom": {
-    "rewriteTsconfig": true
+    "rewriteTsconfig": false
   },
   "include": [
     "./**/*.ts"
@@ -34,8 +34,5 @@
     "./**/*.ts",
     "!./node_modules/**/*.ts",
     "node_modules/@types"
-  ],
-  "files": [
-    "./src/api.objects.ts"
   ]
 }

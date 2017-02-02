@@ -2,8 +2,8 @@
   "name": "jsmoney-server-api",
   "version": "1.0.0",
   "description": "Server API",
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "main": "dist/api.objects.js",
+  "types": "dist/api.objects.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

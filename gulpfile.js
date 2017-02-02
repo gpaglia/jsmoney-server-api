@@ -4,6 +4,7 @@ var gulp = require('gulp'),
     sourcemaps = require('gulp-sourcemaps'),
     del = require('del'),
     tsProject = tsc.createProject('tsconfig.json'),
+    destDir = tsProject.config.compilerOptions.outDir,
     mocha = require('gulp-mocha'),
     path = require('path'),
     rename = require('gulp-rename');
@@ -23,12 +24,15 @@ gulp.task('ts-lint', ['clean-ts'], function () {
  * Compile TypeScript and include references to library and app .d.ts files.
  */
 gulp.task('compile-ts', ['ts-lint'], function () {
-    var tsResult = tsProject.src()
+    var tsProj = tsProject.src();
+    // console.log('tsProj = ' + JSON.stringify(tsProj, null, 4));
+    // var tsResult = tsProject.src()
+    var tsResult = tsProj
     .pipe(sourcemaps.init())
-    .pipe(tsProject());
+    .pipe(tsProject(tsc.reporter.defaultReporter()));
     // .pipe(tsc(tsProject));
     return merge([
-        tsResult.dts.pipe(gulp.dest('dist')),
+        tsResult.dts.pipe(gulp.dest(destDir /*'dist'*/)),
         tsResult.js.pipe(sourcemaps.write('.', {
             // Return relative source map root directories per file.
             includeContent: false,
@@ -36,7 +40,7 @@ gulp.task('compile-ts', ['ts-lint'], function () {
                 var sourceFile = path.join(file.cwd, file.sourceMap.file);
                 return "../" + path.relative(path.dirname(sourceFile), __dirname);
             }
-        })).pipe(gulp.dest('dist'))
+        })).pipe(gulp.dest(destDir /* 'dist' */))
     ]);
 });
 
@@ -45,13 +49,13 @@ gulp.task('copy-json', ['compile-ts'], function () {
                             './src/*.json',                //path to typescript files
                             ];
 
- return gulp.src(sourceJsonFiles).pipe(gulp.dest('dist/src/'));
+ return gulp.src(sourceJsonFiles).pipe(gulp.dest(destDir /* 'dist/src/' */));
 
 });
 
 gulp.task('clean-ts', function (cb) {
   var typeScriptGenFiles = [
-                              './dist/**/*.*'    // path to all JS files auto gen'd by editor
+                              destDir + '/**/*.*' //  './dist/**/*.*' */    // path to all JS files auto gen'd by editor
                            ];
 
   // delete the files
@@ -59,7 +63,7 @@ gulp.task('clean-ts', function (cb) {
 });
 
 gulp.task('test', ['copy-json'], function () {
-	return gulp.src('dist/test/**/*.spec.js', {read: false})
+	return gulp.src(destDir + '/test/**/*.spec.js', {read: false}) // 'dist/test/**/*.spec.js', {read: false})
 		// gulp-mocha needs filepaths so you can't have any plugins before it
 		.pipe(mocha({reporter: 'spec', timeout: '360000'})).once('error', () => {
             process.exit(1);

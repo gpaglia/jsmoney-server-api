@@ -2,7 +2,7 @@
  * Api objects
  */
 
-// import * as bigjs from "big.js";
+import "big.js";
 import BigJS = BigJsLibrary.BigJS;
 
 // Root type
@@ -75,4 +75,37 @@ export enum AccountType {
   asset,
   liability,
   other
+}
+
+// ***
+// Api messages and other stuff
+// ***
+
+export const BEARER = "JWT";
+
+// Requests and Responses
+
+// Datasets
+
+export interface IErrorRes {
+  info: string | {};
+}
+
+export interface IAuthenticateRes {
+  data: {
+    user: IUserObject,
+    token: string
+  };
+}
+
+export interface IGetDatasetsRes {
+  data: IDatasetObject[];
+}
+
+export interface ICreateDatasetReq {
+  data: IDatasetObject;
+}
+
+export interface ICreateDatasetRes {
+  data: IDatasetObject;
 }
