@@ -83,29 +83,23 @@ export enum AccountType {
 
 export const BEARER = "JWT";
 
+// Api error format
+export interface IApiError extends Error {
+  readonly status: number;
+  readonly otherInfo?: string;
+}
+
 // Requests and Responses
 
-// Datasets
-
-export interface IErrorRes {
-  info: string | {};
+export interface IBody<T> {
+  data: T;
 }
 
-export interface IAuthenticateRes {
-  data: {
-    user: IUserObject,
-    token: string
-  };
+export function makeBody<T>(obj: T): IBody<T> {
+  return { data: obj } as IBody<T>;
 }
 
-export interface IGetDatasetsRes {
-  data: IDatasetObject[];
-}
-
-export interface ICreateDatasetReq {
-  data: IDatasetObject;
-}
-
-export interface ICreateDatasetRes {
-  data: IDatasetObject;
+export interface IAuthenticateData {
+  user: IUserObject;
+  token: string;
 }
