@@ -95,8 +95,38 @@ export interface IBody<T> {
   data: T;
 }
 
+export interface IRequestData<U> {
+  objref: IDomainObject;
+  payload: U;
+}
+
+export interface IRequestDataV<U> {
+  objref: IVersionedObject;
+  payload: U;
+}
+
+export type IRequestBody<U> = IBody<IRequestData<U>>;
+
+export type IRequestBodyV<U> = IBody<IRequestDataV<U>>;
+
 export function makeBody<T>(obj: T): IBody<T> {
   return { data: obj } as IBody<T>;
+}
+
+export function makeRequestBody<T extends IDomainObject, U>
+                (ref: T, pl: U): IRequestBody<U> {
+  return makeBody<IRequestData<U>>({
+    objref: ref,
+    payload: pl
+  });
+}
+
+export function makeRequestBodyV<T extends IVersionedObject, U>
+                (ref: T, pl: U): IRequestBodyV<U> {
+  return makeBody<IRequestDataV<U>>({
+    objref: ref,
+    payload: pl
+  });
 }
 
 export interface IAuthenticateData {
