@@ -1,6 +1,6 @@
 {
   "name": "jsmoney-server-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Server API",
   "main": "dist/api.objects.js",
   "types": "dist/api.objects.d.ts",
@@ -18,10 +18,14 @@
   },
   "homepage": "https://github.com/gpaglia/jsmoney-server-api#readme",
   "dependencies": {
-    "big.js": "^3.1.3"
+    "big.js": "^3.1.3",
+    "uuid": "^3.0.1",
+    "validator": "^6.2.1"
   },
   "devDependencies": {
     "@types/big.js": "0.0.31",
+    "@types/uuid": "^2.0.29",
+    "@types/validator": "^6.2.0",
     "chai": "^3.5.0",
     "del": "^2.2.2",
     "gulp": "^3.9.1",
