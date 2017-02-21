@@ -23,16 +23,13 @@
     "rewriteTsconfig": false
   },
   "include": [
-    "./**/*.ts"
+    "./**/*.ts",
+    "*.spec.ts"
   ],
   "exclude": [
     "node_modules",
     "build",
-    "dist"
-  ],
-  "filesGlob": [
-    "./**/*.ts",
-    "!./node_modules/**/*.ts",
-    "node_modules/@types"
+    "dist",
+    "typings/**"
   ]
 }

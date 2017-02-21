@@ -1,23 +1,28 @@
-/*
- *
+/**
  * Validation helpers routines
- * 
  */
-// import * as bigjs from 'big.js';
-import BigJS = BigJsLibrary.BigJS;
 
-import * as vv from 'validator';
-import * as u from './utils';
+// import * as bigjs from "big.js";
+// import BigJS = BigJsLibrary.BigJS;
+
+/* tslint:disable:no-any*/
+
 import {
-    Role,
-    CommodityType,
     AccountType,
+    CommodityType,
+    Role,
     SecurityType
-} from './api.objects';
+} from "./api.objects";
+
+import * as util from "./utils";
+
+import * as val from "validator";
 
 export const USERNAME_MIN_LEN: number = 4;
 export const PASSWORD_MIN_LEN: number = 8;
 export const MAX_NAME_LEN: number = 32;
+export const MAX_CURRENCY_SCALE = 5;
+export const MAX_COMMODITY_SCALE = 5;
 
 export type CheckerFunction = (i: any) => boolean;
 
@@ -29,57 +34,60 @@ export function isDefined(obj: any): boolean {
     return (obj != null);
 }
 
-export function isOfType(obj: any, type: string): boolean {
-    return isDefined(obj) && (typeof obj === type);
+export function isOfType(obj: any, typ: string): boolean {
+    return isDefined(obj) && (typeof obj === typ);
 }
 
-export function isOfTypeOrNull(obj: any, type: string): boolean {
-    return isNull(obj) || (typeof obj === type);
+export function isOfTypeOrNull(obj: any, typ: string): boolean {
+    return isNull(obj) || (typeof obj === typ);
 }
 
-export function isInstanceOf(obj: any, clazz: Function) {
+export function isInstanceOf(obj: any, clazz: Function): boolean {
     return isDefined(obj) && obj instanceof clazz;
 }
 
-export function isArray(obj: any) {
+export function isArray(obj: any): boolean {
     return isDefined(obj) && obj instanceof Array;
 }
 
-export function isArrayDeep(obj: any, fn: CheckerFunction): boolean {
+export function isArrayDeep(obj: any, fn?: CheckerFunction): boolean {
     if (isArray(obj)) {
-        (obj as any[]).forEach((i: any) => {
-            if (! fn(i)) {
+        if (fn == null) {
+            return true;
+        }
+        for (let x of (obj as any[])) {
+            if (! fn(x)) {
                 return false;
             }
-        });
+        }
         return true;
     } else {
         return false;
     }
 }
 
-export function isStringLen(obj: any, min: number, max: number): boolean {
-    return isOfType(obj, 'string') 
-        && vv.isLength(obj, {min: min, max: max});
+export function isStringLen(obj: any, min: number, max?: number): boolean {
+    return isOfType(obj, "string")
+        && val.isLength(obj, {min, max});
 }
 
 export function isInt(obj: any): boolean {
-    return isOfType(obj, 'number') && Number.isInteger(obj as number);
+    return isOfType(obj, "number") && Number.isInteger(obj as number);
 }
 
 export function isIntRange(obj: any, min: number, max: number): boolean {
-    return (isOfType(obj, 'number') 
-            && (obj as number) >= min 
+    return (isOfType(obj, "number")
+            && (obj as number) >= min
             && (obj as number) <= max
             && Number.isInteger(obj as number));
 }
 
 export function isStringInSet(obj: any, strings: string[]): boolean {
-    return isOfType(obj, 'string') && strings.indexOf(obj as string) >= 0;
+    return isOfType(obj, "string") && strings.indexOf(obj as string) >= 0;
 }
 
 export function isNumberInSet(obj: any, numbers: number[]): boolean {
-    return isOfType(obj, 'number') && numbers.indexOf(obj as number) >= 0;
+    return isOfType(obj, "number") && numbers.indexOf(obj as number) >= 0;
 }
 
 export function isIntInSet(obj: any, numbers: number[]): boolean {
@@ -87,26 +95,26 @@ export function isIntInSet(obj: any, numbers: number[]): boolean {
 }
 
 export function isEnumType(obj: any, e: any): boolean {
-    return (isOfType(obj, 'number') 
-                && u.getEnumNamesAndValues(e).map((nvp) => {return nvp.value}).indexOf(obj as number) >= 0)
-            || (isOfType(obj, 'string') 
-                && u.getEnumNamesAndValues(e).map((nvp) => {return nvp.name}).indexOf(obj as string) >= 0);
+    return (isOfType(obj, "number")
+                && util.getEnumNamesAndValues(e).map((nvp) => { return nvp.value; }).indexOf(obj as number) >= 0)
+            || (isOfType(obj, "string")
+                && util.getEnumNamesAndValues(e).map((nvp) => { return nvp.name; }).indexOf(obj as string) >= 0);
 }
 
 export function isEnumKey(obj: any, e: any): boolean {
-    return isOfType(obj, 'string') 
-                && u.getEnumNames(e).indexOf(obj as string) >= 0;
+    return isOfType(obj, "string")
+                && util.getEnumNames(e).indexOf(obj as string) >= 0;
 }
 
 export function isEnumValue(obj: any, e: any): boolean {
-    return isInt(obj) 
-                && u.getEnumValues(e).indexOf(obj as number) >= 0;
+    return isInt(obj)
+                && util.getEnumValues(e).indexOf(obj as number) >= 0;
 }
 
 // Field Validation
 
 export function isId(obj: any): boolean {
-    return vv.isUUID(obj, 4);
+    return val.isUUID(obj, 4);
 }
 
 export function isUsername(obj: any): boolean {
@@ -122,11 +130,11 @@ export function isName(obj: any): boolean {
 }
 
 export function isCurrencyCode(obj: any): boolean {
-    return isOfType(obj, 'string') && /[A-Z][A-Z][A-Z]/.test(obj as string);
+    return isOfType(obj, "string") && /[A-Z][A-Z][A-Z]/.test(obj as string);
 }
 
 export function isCurrencyIso(obj: any): boolean {
-    return isOfType(obj, 'string') && /[0-9][0-9][0-9]/.test(obj as string);
+    return isOfType(obj, "string") && /[0-9][0-9][0-9]/.test(obj as string);
 }
 
 export function isCurrencyScale(obj: any): boolean {
@@ -157,8 +165,8 @@ export function isAccountType(obj: any): boolean {
     return isEnumType(obj, AccountType);
 }
 
-export function isAmount(obj: any) {
-    return (isOfType(obj, 'string') && vv.isDecimal(obj)) || isInstanceOf(obj, Big);
+export function isAmount(obj: any): boolean {
+    return (isOfType(obj, "string") && val.isDecimal(obj)) || isInstanceOf(obj, Big);
 }
 
 // Object Validation
@@ -171,33 +179,29 @@ export function isCredentialsObject(obj: any): boolean {
     return isUsername(obj.username) && isPassword(obj.password);
 }
 
-export const MAX_CURRENCY_SCALE = 5;
-
 export function isCurrencyObject(obj: any): boolean {
     return isCurrencyCode(obj.code)
         && isCurrencyIso(obj.iso)
-        && isCurrencyScale(obj.scale)
+        && isCurrencyScale(obj.scale);
 }
-
-export const MAX_COMMODITY_SCALE = 5;
 
 export function isCommodityObject(obj: any): boolean {
     return isVersionedObject(obj)
-            && isOfType(obj.code, 'string')
+            && isOfType(obj.code, "string")
             && isCommodityType(obj.comType)
             && isCurrencyCode(obj.currencyCode)
-            && isOfType(obj.unit, 'string')
+            && isOfType(obj.unit, "string")
             && isCommodityScale(obj.scale);
 }
 
 export function isSecurityObject(obj: any): boolean {
-    return isVersionedObject(obj) 
+    return isVersionedObject(obj)
             && isCommodityObject(obj)
-            && (u.makeEnumIntValue(CommodityType, obj.comType) === CommodityType.security)
+            && (util.makeEnumIntValue(CommodityType, obj.comType) === CommodityType.security)
             && isSecurityType(obj.secType)
-            && isOfTypeOrNull(obj.altSymbol, 'string')
+            && isOfTypeOrNull(obj.altSymbol, "string")
             && isArray(obj.quoteDrivers)
-            && (isInstanceOf(obj.lastPrice, Big) || isOfType(obj.lastPrice, 'string'));
+            && (isInstanceOf(obj.lastPrice, Big) || isOfType(obj.lastPrice, "string"));
 }
 
 export function isUserObject(obj: any): boolean {
@@ -205,22 +209,22 @@ export function isUserObject(obj: any): boolean {
             && isUsername(obj.username)
             && isDefined(obj.firstName)
             && isDefined(obj.lastName)
-            && vv.isEmail(obj.email)
+            && val.isEmail(obj.email)
             && isRole(obj.role);
 }
 
-export function isAuthenticateData(obj: any) {
-    return isUserObject(obj.user) && isOfType(obj.token, 'string');
+export function isAuthenticateData(obj: any): boolean {
+    return isUserObject(obj.user) && isOfType(obj.token, "string");
 }
 
-export function isDatasetObject(obj: any) {
+export function isDatasetObject(obj: any): boolean {
     return isVersionedObject(obj)
             && isName(obj.name)
             && isCurrencyCode(obj.currencyCode)
             && isCurrencyCodeList(obj.additionalCurrencies);
 }
 
-export function isAccountObject(obj: any) {
+export function isAccountObject(obj: any): boolean {
     return isVersionedObject(obj)
             && isName(obj.name)
             && isAccountType(obj.accType)
@@ -228,4 +232,3 @@ export function isAccountObject(obj: any) {
             && isCurrencyScale(obj.scale)
             && isAmount(obj.qty);
 }
-

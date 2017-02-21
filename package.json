@@ -24,17 +24,22 @@
   },
   "devDependencies": {
     "@types/big.js": "0.0.31",
+    "@types/jasmine": "^2.5.43",
     "@types/uuid": "^2.0.29",
     "@types/validator": "^6.2.0",
     "chai": "^3.5.0",
     "del": "^2.2.2",
     "gulp": "^3.9.1",
+    "gulp-filter": "^5.0.0",
+    "gulp-jasmine": "^2.4.2",
     "gulp-mocha": "^3.0.1",
+    "gulp-print": "^2.0.1",
     "gulp-rename": "^1.2.2",
     "gulp-shell": "^0.5.2",
     "gulp-sourcemaps": "^2.4.0",
     "gulp-tslint": "^7.0.1",
     "gulp-typescript": "^3.1.4",
+    "jasmine": "^2.5.3",
     "merge2": "^1.0.3",
     "tslint-microsoft-contrib": "^4.0.0"
   }

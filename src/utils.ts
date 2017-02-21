@@ -1,15 +1,16 @@
-/*
- *
+/**
  * Enum and other utilities
- * 
  */
+
+/* tslint:disable:no-any */
+
 export type NameAndValue = {
     name: string,
     value: any
-}
+};
 
 export function getObjectValues(e: any): any[] {
-    return Object.keys(e).map(function (k) { return e[k]; });
+    return Object.keys(e).map((k: string) => { return e[k]; });
 }
 
 export function getEnumNamesAndValues(e: any): NameAndValue[] {
@@ -24,13 +25,10 @@ export function getEnumValues(e: any): number[] {
     return getObjectValues(e).filter((v: any) => { return typeof v === "number"; });
 }
 
-export function makeEnumIntValue(e: any, opt: number | string) {
-    if (typeof opt === 'string') {
+export function makeEnumIntValue(e: any, opt: number | string): number {
+    if (typeof opt === "string") {
         return e[opt];
     } else {
         return e[e[opt]];
     }
 }
-
-
-

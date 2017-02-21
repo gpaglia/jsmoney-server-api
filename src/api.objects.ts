@@ -2,44 +2,15 @@
  * Api objects
  */
 
-import * as uuid from 'uuid';
+/* tslint:disable:no-any max-classes-per-file no-empty-interfaces */
 
-// import * as bigjs from 'big.js';
+import * as uuid from "uuid";
+
+// import * as bigjs from "big.js";
 import BigJS = BigJsLibrary.BigJS;
 
-import * as v from './validation';
-import * as u from './utils';
-
-// Factory
-export const OBJECT_CLASS_PROPERTY_NAME: string = 'OBJECT-CLASS-NAME';
-
-interface StaticFactory {
-  make(obj: any): Object;
-}
-
-const apidb: {[name: string]: StaticFactory} = {
-  [CredentialsObject.name]: CredentialsObject,
-  [CurrencyObject.name]: CurrencyObject,
-  [SecurityObject.name]: SecurityObject,
-  [UserObject.name]: UserObject,
-  [UserAndPasswordObject.name]: UserAndPasswordObject,
-  [DatasetObject.name]: DatasetObject,
-  [AccountObject.name]:AccountObject
-}
-
-export function ApiObjectFactory(obj: any): Object {
-  let name = obj[OBJECT_CLASS_PROPERTY_NAME];
-  if (name == null) {
-    return undefined;
-  } else {
-    let c: StaticFactory = apidb[name];
-    if (c == null) {
-      return undefined;
-    } else {
-      return c.make(obj);
-    }
-  }
-}
+import * as u from "./utils";
+import * as v from "./validation";
 
 // Util functions
 export function toAmount(v: string | BigJS): BigJS {
@@ -54,7 +25,7 @@ export abstract class ValidatedObject {
 export interface IValidatedObject extends ValidatedObject {}
 
 export abstract class DomainObject extends ValidatedObject {
-  constructor(public readonly id: string = uuid.v4()) { 
+  constructor(public readonly id: string = uuid.v4()) {
     super();
   }
 }
@@ -69,29 +40,30 @@ export abstract class VersionedObject extends DomainObject {
 export interface IVersionedObject extends IDomainObject, IValidatedObject, VersionedObject { }
 
 // Credentials type
-export class CredentialsObject extends ValidatedObject{
+export class CredentialsObject extends ValidatedObject {
   constructor(
     public username: string,
     public password: string
-  ) { 
+  ) {
     super();
+  }
+
+  public static make(obj: any): CredentialsObject {
+    if (v.isCredentialsObject(obj)) {
+      return new CredentialsObject(obj.username, obj.password);
+    } else {
+      throw new Error("Invalid username or password structure");
+    }
   }
 
   public isValid(): boolean {
     return v.isCredentialsObject(this);
   }
-  public static make(obj: any): CredentialsObject {
-    if (v.isCredentialsObject(obj)) {
-      return new CredentialsObject(obj.username, obj.password);
-    } else {
-      throw new Error('Invalid username or password structure');
-    }
-  }
+
 }
 export interface ICredentialsObject extends CredentialsObject { }
 
 // Currency type
-
 
 export class CurrencyObject extends ValidatedObject {
   constructor(
@@ -103,17 +75,18 @@ export class CurrencyObject extends ValidatedObject {
     super();
   }
 
-  public isValid(): boolean {
-    return v.isCurrencyObject(this);
-  }
-
   public static make(obj: any): CurrencyObject {
     if (v.isCurrencyObject(this)) {
       return new CurrencyObject(obj.code, obj.iso, obj.description, obj.scale);
     } else {
-      throw new Error('Invalid CurrencyObject parameters');      
+      throw new Error("Invalid CurrencyObject parameters");
     }
   }
+
+  public isValid(): boolean {
+    return v.isCurrencyObject(this);
+  }
+
 }
 
 export interface ICurrencyObject extends CurrencyObject, IVersionedObject { }
@@ -130,11 +103,11 @@ export enum CommodityType {
   lineofcredit
 }
 
-export const CommodityTypeNames: string[] = u.getEnumNames(CommodityType);
-export const CommodityTypeValues: number[] = u.getEnumValues(CommodityType);
-export const CommodityTypeNamesAndValues: u.NameAndValue[] = u.getEnumNamesAndValues(CommodityType);
+export const COMMODITY_TYPE_NAMES: string[] = u.getEnumNames(CommodityType);
+export const COMMODITY_TYPE_VALUES: number[] = u.getEnumValues(CommodityType);
+export const COMMODITY_TYPE_NAMES_AND_VALUES: u.NameAndValue[] = u.getEnumNamesAndValues(CommodityType);
 
-export const DEFAULT_COMMODITY_UNIT = 'qty';
+export const DEFAULT_COMMODITY_UNIT = "qty";
 
 export abstract class CommodityObject extends VersionedObject {
 
@@ -161,9 +134,9 @@ export enum SecurityType {
   fund
 }
 
-export const SecurityTypeNames: string[] = u.getEnumNames(SecurityType);
-export const SecurityTypeValues: number[] = u.getEnumValues(SecurityType);
-export const SecurityTypeNamesAndValues: u.NameAndValue[] = u.getEnumNamesAndValues(SecurityType);
+export const SECURITY_TYPE_NAMES: string[] = u.getEnumNames(SecurityType);
+export const SECURITY_TYPE_VALUES: number[] = u.getEnumValues(SecurityType);
+export const SECURITY_TYPE_NAMES_AND_VALUES: u.NameAndValue[] = u.getEnumNamesAndValues(SecurityType);
 
 export class SecurityObject extends CommodityObject implements ICommodityObject, IVersionedObject {
 
@@ -182,23 +155,11 @@ export class SecurityObject extends CommodityObject implements ICommodityObject,
     lastPrice: string | BigJS
   ) {
     super(id, version, code, CommodityType.security, description, currencyCode, DEFAULT_COMMODITY_UNIT, scale);
-    this.lastPrice = (typeof lastPrice === 'string' ? Big(lastPrice as string) : lastPrice);
+    this.lastPrice = (typeof lastPrice === "string" ? Big(lastPrice as string) : lastPrice);
  }
 
-  public get lastPriceStr() {
-    return this.lastPrice.toString();
-  }
-
-  public set lastPriceStr(value: string) {
-    this.lastPrice = Big(value);
-  }
-
-  public isValid(): boolean {
-    return v.isSecurityObject(this);
-  }
-
   public static make(obj: any): SecurityObject {
-    if(v.isSecurityObject(obj)) {
+    if (v.isSecurityObject(obj)) {
       return new SecurityObject(
         obj.id,
         obj.version,
@@ -211,13 +172,25 @@ export class SecurityObject extends CommodityObject implements ICommodityObject,
         obj.quoteDrivers,
         obj.lastPrice);
     } else {
-        throw new Error('Invalid SecurityObject parameters');
+        throw new Error("Invalid SecurityObject parameters");
     }
   }
+
+  public get lastPriceStr(): string {
+    return this.lastPrice.toString();
+  }
+
+  public set lastPriceStr(value: string) {
+    this.lastPrice = Big(value);
+  }
+
+  public isValid(): boolean {
+    return v.isSecurityObject(this);
+  }
+
 }
 
 export interface ISecurityObject extends SecurityObject, IVersionedObject { }
-
 
 // User and user role types
 export enum Role {
@@ -226,9 +199,9 @@ export enum Role {
   administrator
 }
 
-export const RoleNames: string[] = u.getEnumNames(Role);
-export const RoleValues: number[] = u.getEnumValues(Role);
-export const RoleNamesAndValues: u.NameAndValue[] = u.getEnumNamesAndValues(Role);
+export const ROLE_NAMES: string[] = u.getEnumNames(Role);
+export const ROLE_VALUES: number[] = u.getEnumValues(Role);
+export const ROLE_NAMES_AND_VALUES: u.NameAndValue[] = u.getEnumNamesAndValues(Role);
 
 export class UserObject extends VersionedObject {
 
@@ -244,10 +217,6 @@ export class UserObject extends VersionedObject {
     super(id, version);
   }
 
-  public isValid(): boolean {
-    return v.isUserObject(this);
-  }
-
   public static make(obj: any): UserObject {
     if (v.isUserObject(obj)) {
       return new UserObject(
@@ -257,11 +226,16 @@ export class UserObject extends VersionedObject {
         obj.firstName,
         obj.lastName,
         obj.email,
-        u.makeEnumIntValue(Role, obj.role))
+        u.makeEnumIntValue(Role, obj.role));
     } else {
-      throw new Error('Invalid UserObject parameters');
+      throw new Error("Invalid UserObject parameters");
     }
   }
+
+  public isValid(): boolean {
+    return v.isUserObject(this);
+  }
+
 }
 
 export interface IUserObject extends UserObject, IVersionedObject { }
@@ -270,21 +244,22 @@ export class UserAndPasswordObject extends ValidatedObject {
   constructor(
     public user: IUserObject,
     public readonly password: string
-  ) { 
+  ) {
     super();
-  }
-
-  public isValid(): boolean {
-    return v.isUserObject(this.user) && v.isPassword(this.password);
   }
 
   public static make(obj: any): UserAndPasswordObject {
     if (v.isUserObject(obj.user) && v.isPassword(obj.password)) {
       return new UserAndPasswordObject(obj.user, obj.password);
     } else {
-      throw new Error('Invalid UserAndPassword parameters');
+      throw new Error("Invalid UserAndPassword parameters");
     }
   }
+
+  public isValid(): boolean {
+    return v.isUserObject(this.user) && v.isPassword(this.password);
+  }
+
 }
 export interface IUserAndPasswordObject extends UserAndPasswordObject { }
 
@@ -294,20 +269,20 @@ export class AuthenticateData {
     public token: string
   ) { }
 
+  public static make(obj: any): AuthenticateData {
+    if (v.isAuthenticateData(obj)) {
+      return new AuthenticateData(UserObject.make(obj.user), obj.token);
+    } else {
+      throw new Error("Invalid AUthenticateData parameters");
+    }
+  }
+
   public isValid(): boolean {
     return v.isAuthenticateData(this);
   }
 
-  public static make(obj: any) : AuthenticateData {
-    if (v.isAuthenticateData(obj)) {
-      return new AuthenticateData(UserObject.make(obj.user), obj.token);
-    } else {
-      throw new Error('Invalid AUthenticateData parameters');
-    }
-  }
 }
 export class IAuthenticateData extends AuthenticateData {}
-
 
 // Dataset type
 export class DatasetObject extends VersionedObject {
@@ -322,10 +297,6 @@ export class DatasetObject extends VersionedObject {
     super(id, version);
   }
 
-  public isValid(): boolean {
-    return v.isDatasetObject(this);
-  }
-
   public static make(obj: any): DatasetObject {
     if (v.isDatasetObject(obj)) {
       return new DatasetObject(
@@ -336,9 +307,14 @@ export class DatasetObject extends VersionedObject {
         obj.currencyCode,
         obj.additionalCurrencies);
     } else {
-      throw new Error('Invalid datasetObject parameters');
+      throw new Error("Invalid datasetObject parameters");
     }
   }
+
+  public isValid(): boolean {
+    return v.isDatasetObject(this);
+  }
+
 }
 export interface IDatasetObject extends DatasetObject, IVersionedObject { }
 
@@ -358,9 +334,9 @@ export enum AccountType {
   other
 }
 
-export const AccountTypeNames: string[] = u.getEnumNames(AccountType);
-export const AccountTypeValues: number[] = u.getEnumValues(AccountType);
-export const AccountTypeNamesAndValues: u.NameAndValue[] = u.getEnumNamesAndValues(AccountType);
+export const ACCOUNT_TYPE_NAMES: string[] = u.getEnumNames(AccountType);
+export const ACCOUNT_TYPE_VALUES: number[] = u.getEnumValues(AccountType);
+export const ACCOUNT_TYPE_NAMES_AND_VALUES: u.NameAndValue[] = u.getEnumNamesAndValues(AccountType);
 
 // Account
 export class AccountObject extends VersionedObject {
@@ -380,10 +356,6 @@ export class AccountObject extends VersionedObject {
     this.qty = toAmount(this.qty);
   }
 
-  public isValid(): boolean {
-    return v.isAccountObject(this);
-  }
-
   public static make(obj: any): AccountObject {
     if (v.isAccountObject(obj)) {
       return new AccountObject(
@@ -396,9 +368,14 @@ export class AccountObject extends VersionedObject {
         obj.qty,
         obj.scale);
     } else {
-      throw new Error('Invalid AccountObject parameters');
+      throw new Error("Invalid AccountObject parameters");
     }
   }
+
+  public isValid(): boolean {
+    return v.isAccountObject(this);
+  }
+
 }
 
 // ***
@@ -464,5 +441,37 @@ export function makeRequestBody<T extends DomainObject, U> (ref: T, pl: U): Requ
 
 export function makeRequestBodyV<T extends VersionedObject, U> (ref: T, pl: U): RequestBodyV<U> {
   return makeBody<RequestDataV<U>>(new RequestDataV(ref, pl));
+}
+
+// Dynamic factory
+
+export const OBJECT_CLASS_PROPERTY_NAME: string = "_meta_class";
+
+interface IStaticFactory {
+  make(obj: any): Object;
+}
+
+const apidb: {[name: string]: IStaticFactory} = {
+  [CredentialsObject.name]: CredentialsObject,
+  [CurrencyObject.name]: CurrencyObject,
+  [SecurityObject.name]: SecurityObject,
+  [UserObject.name]: UserObject,
+  [UserAndPasswordObject.name]: UserAndPasswordObject,
+  [DatasetObject.name]: DatasetObject,
+  [AccountObject.name]: AccountObject
+};
+
+export function apiObjectFactory(obj: any): Object {
+  const name = obj[OBJECT_CLASS_PROPERTY_NAME];
+  if (name == null) {
+    return undefined;
+  } else {
+    const c: IStaticFactory = apidb[name];
+    if (c == null) {
+      return undefined;
+    } else {
+      return c.make(obj);
+    }
+  }
 }
 
