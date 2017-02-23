@@ -2,8 +2,8 @@
  * Validation helpers routines
  */
 
-// import * as bigjs from "big.js";
-// import BigJS = BigJsLibrary.BigJS;
+import * as Big from "big.js";
+
 
 /* tslint:disable:no-any*/
 
@@ -19,7 +19,9 @@ import * as util from "./utils";
 import * as val from "validator";
 
 export const USERNAME_MIN_LEN: number = 4;
+export const USERNAME_MAX_LEN: number = 12;
 export const PASSWORD_MIN_LEN: number = 8;
+export const PASSWORD_MAX_LEN: number = 12;
 export const MAX_NAME_LEN: number = 32;
 export const MAX_CURRENCY_SCALE = 5;
 export const MAX_COMMODITY_SCALE = 5;
@@ -114,35 +116,36 @@ export function isEnumValue(obj: any, e: any): boolean {
 // Field Validation
 
 export function isId(obj: any): boolean {
-    return val.isUUID(obj, 4);
+    return isOfType(obj, 'string') && val.isUUID(obj, 4);
 }
 
 export function isUsername(obj: any): boolean {
-    return isStringLen(obj, USERNAME_MIN_LEN, undefined);
+    return isStringLen(obj, USERNAME_MIN_LEN, USERNAME_MAX_LEN) 
+                && /^[a-zA_Z][a-zA-Z0-9_]*$/.test(obj);
 }
 
 export function isPassword(obj: any): boolean {
-    return isStringLen(obj, PASSWORD_MIN_LEN, undefined);
+    return isStringLen(obj, PASSWORD_MIN_LEN, PASSWORD_MAX_LEN);
 }
 
 export function isName(obj: any): boolean {
-    return isStringLen(obj.name, 1, MAX_NAME_LEN);
+    return isStringLen(obj, 1, MAX_NAME_LEN);
 }
 
 export function isCurrencyCode(obj: any): boolean {
-    return isOfType(obj, "string") && /[A-Z][A-Z][A-Z]/.test(obj as string);
+    return isOfType(obj, "string") && /^[A-Z][A-Z][A-Z]$/.test(obj as string);
 }
 
 export function isCurrencyIso(obj: any): boolean {
-    return isOfType(obj, "string") && /[0-9][0-9][0-9]/.test(obj as string);
+    return isOfType(obj, "string") && /^[0-9][0-9][0-9]$/.test(obj as string);
 }
 
 export function isCurrencyScale(obj: any): boolean {
-    return isIntRange(obj.scale, 0, MAX_CURRENCY_SCALE);
+    return isIntRange(obj, 0, MAX_CURRENCY_SCALE);
 }
 
 export function isCommodityScale(obj: any): boolean {
-    return isIntRange(obj.scale, 0, MAX_COMMODITY_SCALE);
+    return isIntRange(obj, 0, MAX_COMMODITY_SCALE);
 }
 
 export function isCurrencyCodeList(obj: any): boolean {
@@ -171,8 +174,8 @@ export function isAmount(obj: any): boolean {
 
 // Object Validation
 
-export function isVersionedObject(obj: any): boolean {
-    return (obj.id == null || isId(obj.id)) && (obj.version == null || obj.version >= 0);
+export function isVersionedObject(obj: any, explicit: boolean = false): boolean {
+    return ((obj.id == null && ! explicit) || isId(obj.id)) && ((obj.version == null && ! explicit) || obj.version >= 0);
 }
 
 export function isCredentialsObject(obj: any): boolean {
@@ -182,50 +185,57 @@ export function isCredentialsObject(obj: any): boolean {
 export function isCurrencyObject(obj: any): boolean {
     return isCurrencyCode(obj.code)
         && isCurrencyIso(obj.iso)
-        && isCurrencyScale(obj.scale);
+        && isCurrencyScale(obj.scale)
+        && isOfType(obj.description, 'string');
 }
 
-export function isCommodityObject(obj: any): boolean {
-    return isVersionedObject(obj)
+export function isCommodityObject(obj: any, explicit: boolean = false): boolean {
+    return isVersionedObject(obj, explicit)
             && isOfType(obj.code, "string")
             && isCommodityType(obj.comType)
             && isCurrencyCode(obj.currencyCode)
-            && isOfType(obj.unit, "string")
-            && isCommodityScale(obj.scale);
+            && isOfTypeOrNull(obj.unit, "string")
+            && isCommodityScale(obj.scale)
+            && isOfType(obj.description, 'string');
 }
 
-export function isSecurityObject(obj: any): boolean {
-    return isVersionedObject(obj)
+export function isSecurityObject(obj: any, explicit: boolean = false): boolean {
+    return isVersionedObject(obj, explicit)
             && isCommodityObject(obj)
             && (util.makeEnumIntValue(CommodityType, obj.comType) === CommodityType.security)
             && isSecurityType(obj.secType)
             && isOfTypeOrNull(obj.altSymbol, "string")
-            && isArray(obj.quoteDrivers)
-            && (isInstanceOf(obj.lastPrice, Big) || isOfType(obj.lastPrice, "string"));
+            && (isNull(obj.quoteDriver) || isArrayDeep(obj.quoteDrivers, (x) => { return isOfType(x, 'string'); }))
+            && (isInstanceOf(obj.lastPrice, Big) || isAmount(obj.lastPrice));
 }
 
-export function isUserObject(obj: any): boolean {
-    return isVersionedObject(obj)
+export function isUserObject(obj: any, explicit: boolean = false): boolean {
+    return isVersionedObject(obj, explicit)
             && isUsername(obj.username)
             && isDefined(obj.firstName)
             && isDefined(obj.lastName)
-            && val.isEmail(obj.email)
+            && isOfType(obj.email, 'string') && val.isEmail(obj.email)
             && isRole(obj.role);
 }
 
-export function isAuthenticateData(obj: any): boolean {
-    return isUserObject(obj.user) && isOfType(obj.token, "string");
+export function isUserAndPasswordObject(obj: any): boolean {
+    return isUserObject(obj.user, true) && isPassword(obj.password);
 }
 
-export function isDatasetObject(obj: any): boolean {
-    return isVersionedObject(obj)
+export function isAuthenticateDataObject(obj: any): boolean {
+    return isUserObject(obj.user, true) && isOfType(obj.token, "string");
+}
+
+export function isDatasetObject(obj: any, explicit: boolean = true): boolean {
+    return isVersionedObject(obj, explicit)
             && isName(obj.name)
+            && isId(obj.userId)
             && isCurrencyCode(obj.currencyCode)
-            && isCurrencyCodeList(obj.additionalCurrencies);
+            && isCurrencyCodeList(obj.additionalCurrencyCodes);
 }
 
-export function isAccountObject(obj: any): boolean {
-    return isVersionedObject(obj)
+export function isAccountObject(obj: any, explicit: boolean = true): boolean {
+    return isVersionedObject(obj, explicit)
             && isName(obj.name)
             && isAccountType(obj.accType)
             && isCurrencyCode(obj.currencyCode)

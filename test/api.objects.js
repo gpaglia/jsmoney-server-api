@@ -4,6 +4,7 @@
 "use strict";
 /* tslint:disable:no-any max-classes-per-file no-empty-interfaces */
 const uuid = require("uuid");
+const Big = require("big.js");
 const u = require("./utils");
 const v = require("./validation");
 // Util functions
@@ -60,7 +61,7 @@ class CurrencyObject extends ValidatedObject {
         this.scale = scale;
     }
     static make(obj) {
-        if (v.isCurrencyObject(this)) {
+        if (v.isCurrencyObject(obj)) {
             return new CurrencyObject(obj.code, obj.iso, obj.description, obj.scale);
         }
         else {
@@ -97,6 +98,9 @@ class CommodityObject extends VersionedObject {
         this.unit = unit;
         this.scale = scale;
     }
+    isValid() {
+        return v.isCommodityObject(this, true);
+    }
 }
 exports.CommodityObject = CommodityObject;
 var SecurityType;
@@ -131,7 +135,7 @@ class SecurityObject extends CommodityObject {
         this.lastPrice = Big(value);
     }
     isValid() {
-        return v.isSecurityObject(this);
+        return v.isSecurityObject(this, true);
     }
 }
 exports.SecurityObject = SecurityObject;
@@ -163,7 +167,7 @@ class UserObject extends VersionedObject {
         }
     }
     isValid() {
-        return v.isUserObject(this);
+        return v.isUserObject(this, true);
     }
 }
 exports.UserObject = UserObject;
@@ -182,50 +186,51 @@ class UserAndPasswordObject extends ValidatedObject {
         }
     }
     isValid() {
-        return v.isUserObject(this.user) && v.isPassword(this.password);
+        return v.isUserAndPasswordObject(this);
     }
 }
 exports.UserAndPasswordObject = UserAndPasswordObject;
-class AuthenticateData {
+class AuthenticateDataObject {
     constructor(user, token) {
         this.user = user;
         this.token = token;
     }
     static make(obj) {
-        if (v.isAuthenticateData(obj)) {
-            return new AuthenticateData(UserObject.make(obj.user), obj.token);
+        if (v.isAuthenticateDataObject(obj)) {
+            return new AuthenticateDataObject(UserObject.make(obj.user), obj.token);
         }
         else {
             throw new Error("Invalid AUthenticateData parameters");
         }
     }
     isValid() {
-        return v.isAuthenticateData(this);
+        return v.isAuthenticateDataObject(this);
     }
 }
-exports.AuthenticateData = AuthenticateData;
-class IAuthenticateData extends AuthenticateData {
+exports.AuthenticateDataObject = AuthenticateDataObject;
+class IAuthenticateDataObject extends AuthenticateDataObject {
 }
-exports.IAuthenticateData = IAuthenticateData;
+exports.IAuthenticateDataObject = IAuthenticateDataObject;
 // Dataset type
 class DatasetObject extends VersionedObject {
-    constructor(id, version, name, description, currencyCode, additionalCurrencies) {
+    constructor(id, version, userId, name, description, currencyCode, additionalCurrencyCodes) {
         super(id, version);
+        this.userId = userId;
         this.name = name;
         this.description = description;
         this.currencyCode = currencyCode;
-        this.additionalCurrencies = additionalCurrencies;
+        this.additionalCurrencyCodes = additionalCurrencyCodes;
     }
     static make(obj) {
         if (v.isDatasetObject(obj)) {
-            return new DatasetObject(obj.id, obj.version, obj.name, obj.description, obj.currencyCode, obj.additionalCurrencies);
+            return new DatasetObject(obj.id, obj.version, obj.userId, obj.name, obj.description, obj.currencyCode, obj.additionalCurrencyCodes);
         }
         else {
             throw new Error("Invalid datasetObject parameters");
         }
     }
     isValid() {
-        return v.isDatasetObject(this);
+        return v.isDatasetObject(this, true);
     }
 }
 exports.DatasetObject = DatasetObject;
@@ -268,7 +273,7 @@ class AccountObject extends VersionedObject {
         }
     }
     isValid() {
-        return v.isAccountObject(this);
+        return v.isAccountObject(this, true);
     }
 }
 exports.AccountObject = AccountObject;
@@ -330,10 +335,11 @@ const apidb = {
     [UserObject.name]: UserObject,
     [UserAndPasswordObject.name]: UserAndPasswordObject,
     [DatasetObject.name]: DatasetObject,
-    [AccountObject.name]: AccountObject
+    [AccountObject.name]: AccountObject,
+    [AuthenticateDataObject.name]: AuthenticateDataObject
 };
-function apiObjectFactory(obj) {
-    const name = obj[exports.OBJECT_CLASS_PROPERTY_NAME];
+function apiObjectFactory(obj, clazz) {
+    const name = clazz ? clazz.name : obj[exports.OBJECT_CLASS_PROPERTY_NAME];
     if (name == null) {
         return undefined;
     }

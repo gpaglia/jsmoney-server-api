@@ -6,7 +6,7 @@
 
 import * as uuid from "uuid";
 
-// import * as bigjs from "big.js";
+import * as  Big from "big.js";
 import BigJS = BigJsLibrary.BigJS;
 
 import * as u from "./utils";
@@ -76,7 +76,7 @@ export class CurrencyObject extends ValidatedObject {
   }
 
   public static make(obj: any): CurrencyObject {
-    if (v.isCurrencyObject(this)) {
+    if (v.isCurrencyObject(obj)) {
       return new CurrencyObject(obj.code, obj.iso, obj.description, obj.scale);
     } else {
       throw new Error("Invalid CurrencyObject parameters");
@@ -124,6 +124,9 @@ export abstract class CommodityObject extends VersionedObject {
     super(id, version);
   }
 
+  public isValid(): boolean {
+    return v.isCommodityObject(this, true);
+  }
 }
 
 export interface ICommodityObject extends CommodityObject, IVersionedObject { }
@@ -185,7 +188,7 @@ export class SecurityObject extends CommodityObject implements ICommodityObject,
   }
 
   public isValid(): boolean {
-    return v.isSecurityObject(this);
+    return v.isSecurityObject(this, true);
   }
 
 }
@@ -233,7 +236,7 @@ export class UserObject extends VersionedObject {
   }
 
   public isValid(): boolean {
-    return v.isUserObject(this);
+    return v.isUserObject(this, true);
   }
 
 }
@@ -257,42 +260,43 @@ export class UserAndPasswordObject extends ValidatedObject {
   }
 
   public isValid(): boolean {
-    return v.isUserObject(this.user) && v.isPassword(this.password);
+    return v.isUserAndPasswordObject(this);
   }
 
 }
 export interface IUserAndPasswordObject extends UserAndPasswordObject { }
 
-export class AuthenticateData {
+export class AuthenticateDataObject {
   constructor(
     public user: UserObject,
     public token: string
   ) { }
 
-  public static make(obj: any): AuthenticateData {
-    if (v.isAuthenticateData(obj)) {
-      return new AuthenticateData(UserObject.make(obj.user), obj.token);
+  public static make(obj: any): AuthenticateDataObject {
+    if (v.isAuthenticateDataObject(obj)) {
+      return new AuthenticateDataObject(UserObject.make(obj.user), obj.token);
     } else {
       throw new Error("Invalid AUthenticateData parameters");
     }
   }
 
   public isValid(): boolean {
-    return v.isAuthenticateData(this);
+    return v.isAuthenticateDataObject(this);
   }
 
 }
-export class IAuthenticateData extends AuthenticateData {}
+export class IAuthenticateDataObject extends AuthenticateDataObject {}
 
 // Dataset type
 export class DatasetObject extends VersionedObject {
   constructor(
     id: string,
     version: number,
+    public userId: string,
     public readonly name: string,
     public description: string,
     public readonly currencyCode: string,
-    public additionalCurrencies: string[]
+    public additionalCurrencyCodes: string[]
   ) {
     super(id, version);
   }
@@ -302,17 +306,18 @@ export class DatasetObject extends VersionedObject {
       return new DatasetObject(
         obj.id,
         obj.version,
+        obj.userId,
         obj.name,
         obj.description,
         obj.currencyCode,
-        obj.additionalCurrencies);
+        obj.additionalCurrencyCodes);
     } else {
       throw new Error("Invalid datasetObject parameters");
     }
   }
 
   public isValid(): boolean {
-    return v.isDatasetObject(this);
+    return v.isDatasetObject(this, true);
   }
 
 }
@@ -373,7 +378,7 @@ export class AccountObject extends VersionedObject {
   }
 
   public isValid(): boolean {
-    return v.isAccountObject(this);
+    return v.isAccountObject(this, true);
   }
 
 }
@@ -458,11 +463,12 @@ const apidb: {[name: string]: IStaticFactory} = {
   [UserObject.name]: UserObject,
   [UserAndPasswordObject.name]: UserAndPasswordObject,
   [DatasetObject.name]: DatasetObject,
-  [AccountObject.name]: AccountObject
+  [AccountObject.name]: AccountObject,
+  [AuthenticateDataObject.name]: AuthenticateDataObject
 };
 
-export function apiObjectFactory(obj: any): Object {
-  const name = obj[OBJECT_CLASS_PROPERTY_NAME];
+export function apiObjectFactory(obj: any, clazz?: Function): Object {
+  const name = clazz ? clazz.name : obj[OBJECT_CLASS_PROPERTY_NAME];
   if (name == null) {
     return undefined;
   } else {

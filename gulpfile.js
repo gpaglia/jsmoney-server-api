@@ -16,7 +16,7 @@ var gulp = require('gulp'),
     shell = require('gulp-shell');
 
 var destDir = tsProject.config.compilerOptions.outDir,
-    destDirTest = destDir + '-test',
+    testDir = destDir + '/../test',
     noSpecs = filter(['**/*.ts', '!**/*.spec.ts']),
     withSpecs = filter(['**/*.ts']);
 
@@ -67,7 +67,7 @@ gulp.task('compile-ts-test', ['clean-ts-test'], function (done) {
     .pipe(withSpecs)
     //.pipe(print())
     .pipe(tsProjectTest(tsc.reporter.defaultReporter()))
-    .pipe(gulp.dest(destDirTest))
+    .pipe(gulp.dest(testDir))
     .on('end', done);
 });
 
@@ -85,13 +85,13 @@ gulp.task('clean-ts-src', function (done) {
 });
 
 gulp.task('clean-ts-test', function (done) {
-  var typeScriptGenFiles = [destDirTest + '/**/*.*'];
+  var typeScriptGenFiles = [testDir + '/**/*.*'];
   // delete the files
   return del(typeScriptGenFiles, done);
 });
 
 gulp.task('test', ['compile-ts-test'], function (done) {
-	return gulp.src('./dist-test/**')    //destDirTest + '/**/*.spec.js') 
+	return gulp.src(testDir + '/**')    //testDir + '/**/*.spec.js') 
         .pipe(jasmine({timeout: '360000'}));
 });
 

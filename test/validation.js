@@ -2,14 +2,15 @@
  * Validation helpers routines
  */
 "use strict";
-// import * as bigjs from "big.js";
-// import BigJS = BigJsLibrary.BigJS;
+const Big = require("big.js");
 /* tslint:disable:no-any*/
 const api_objects_1 = require("./api.objects");
 const util = require("./utils");
 const val = require("validator");
 exports.USERNAME_MIN_LEN = 4;
+exports.USERNAME_MAX_LEN = 12;
 exports.PASSWORD_MIN_LEN = 8;
+exports.PASSWORD_MAX_LEN = 12;
 exports.MAX_NAME_LEN = 32;
 exports.MAX_CURRENCY_SCALE = 5;
 exports.MAX_COMMODITY_SCALE = 5;
@@ -101,35 +102,36 @@ function isEnumValue(obj, e) {
 exports.isEnumValue = isEnumValue;
 // Field Validation
 function isId(obj) {
-    return val.isUUID(obj, 4);
+    return isOfType(obj, 'string') && val.isUUID(obj, 4);
 }
 exports.isId = isId;
 function isUsername(obj) {
-    return isStringLen(obj, exports.USERNAME_MIN_LEN, undefined);
+    return isStringLen(obj, exports.USERNAME_MIN_LEN, exports.USERNAME_MAX_LEN)
+        && /^[a-zA_Z][a-zA-Z0-9_]*$/.test(obj);
 }
 exports.isUsername = isUsername;
 function isPassword(obj) {
-    return isStringLen(obj, exports.PASSWORD_MIN_LEN, undefined);
+    return isStringLen(obj, exports.PASSWORD_MIN_LEN, exports.PASSWORD_MAX_LEN);
 }
 exports.isPassword = isPassword;
 function isName(obj) {
-    return isStringLen(obj.name, 1, exports.MAX_NAME_LEN);
+    return isStringLen(obj, 1, exports.MAX_NAME_LEN);
 }
 exports.isName = isName;
 function isCurrencyCode(obj) {
-    return isOfType(obj, "string") && /[A-Z][A-Z][A-Z]/.test(obj);
+    return isOfType(obj, "string") && /^[A-Z][A-Z][A-Z]$/.test(obj);
 }
 exports.isCurrencyCode = isCurrencyCode;
 function isCurrencyIso(obj) {
-    return isOfType(obj, "string") && /[0-9][0-9][0-9]/.test(obj);
+    return isOfType(obj, "string") && /^[0-9][0-9][0-9]$/.test(obj);
 }
 exports.isCurrencyIso = isCurrencyIso;
 function isCurrencyScale(obj) {
-    return isIntRange(obj.scale, 0, exports.MAX_CURRENCY_SCALE);
+    return isIntRange(obj, 0, exports.MAX_CURRENCY_SCALE);
 }
 exports.isCurrencyScale = isCurrencyScale;
 function isCommodityScale(obj) {
-    return isIntRange(obj.scale, 0, exports.MAX_COMMODITY_SCALE);
+    return isIntRange(obj, 0, exports.MAX_COMMODITY_SCALE);
 }
 exports.isCommodityScale = isCommodityScale;
 function isCurrencyCodeList(obj) {
@@ -157,8 +159,8 @@ function isAmount(obj) {
 }
 exports.isAmount = isAmount;
 // Object Validation
-function isVersionedObject(obj) {
-    return (obj.id == null || isId(obj.id)) && (obj.version == null || obj.version >= 0);
+function isVersionedObject(obj, explicit = false) {
+    return ((obj.id == null && !explicit) || isId(obj.id)) && ((obj.version == null && !explicit) || obj.version >= 0);
 }
 exports.isVersionedObject = isVersionedObject;
 function isCredentialsObject(obj) {
@@ -168,50 +170,57 @@ exports.isCredentialsObject = isCredentialsObject;
 function isCurrencyObject(obj) {
     return isCurrencyCode(obj.code)
         && isCurrencyIso(obj.iso)
-        && isCurrencyScale(obj.scale);
+        && isCurrencyScale(obj.scale)
+        && isOfType(obj.description, 'string');
 }
 exports.isCurrencyObject = isCurrencyObject;
-function isCommodityObject(obj) {
-    return isVersionedObject(obj)
+function isCommodityObject(obj, explicit = false) {
+    return isVersionedObject(obj, explicit)
         && isOfType(obj.code, "string")
         && isCommodityType(obj.comType)
         && isCurrencyCode(obj.currencyCode)
-        && isOfType(obj.unit, "string")
-        && isCommodityScale(obj.scale);
+        && isOfTypeOrNull(obj.unit, "string")
+        && isCommodityScale(obj.scale)
+        && isOfType(obj.description, 'string');
 }
 exports.isCommodityObject = isCommodityObject;
-function isSecurityObject(obj) {
-    return isVersionedObject(obj)
+function isSecurityObject(obj, explicit = false) {
+    return isVersionedObject(obj, explicit)
         && isCommodityObject(obj)
         && (util.makeEnumIntValue(api_objects_1.CommodityType, obj.comType) === api_objects_1.CommodityType.security)
         && isSecurityType(obj.secType)
         && isOfTypeOrNull(obj.altSymbol, "string")
-        && isArray(obj.quoteDrivers)
-        && (isInstanceOf(obj.lastPrice, Big) || isOfType(obj.lastPrice, "string"));
+        && (isNull(obj.quoteDriver) || isArrayDeep(obj.quoteDrivers, (x) => { return isOfType(x, 'string'); }))
+        && (isInstanceOf(obj.lastPrice, Big) || isAmount(obj.lastPrice));
 }
 exports.isSecurityObject = isSecurityObject;
-function isUserObject(obj) {
-    return isVersionedObject(obj)
+function isUserObject(obj, explicit = false) {
+    return isVersionedObject(obj, explicit)
         && isUsername(obj.username)
         && isDefined(obj.firstName)
         && isDefined(obj.lastName)
-        && val.isEmail(obj.email)
+        && isOfType(obj.email, 'string') && val.isEmail(obj.email)
         && isRole(obj.role);
 }
 exports.isUserObject = isUserObject;
-function isAuthenticateData(obj) {
-    return isUserObject(obj.user) && isOfType(obj.token, "string");
+function isUserAndPasswordObject(obj) {
+    return isUserObject(obj.user, true) && isPassword(obj.password);
 }
-exports.isAuthenticateData = isAuthenticateData;
-function isDatasetObject(obj) {
-    return isVersionedObject(obj)
+exports.isUserAndPasswordObject = isUserAndPasswordObject;
+function isAuthenticateDataObject(obj) {
+    return isUserObject(obj.user, true) && isOfType(obj.token, "string");
+}
+exports.isAuthenticateDataObject = isAuthenticateDataObject;
+function isDatasetObject(obj, explicit = true) {
+    return isVersionedObject(obj, explicit)
         && isName(obj.name)
+        && isId(obj.userId)
         && isCurrencyCode(obj.currencyCode)
-        && isCurrencyCodeList(obj.additionalCurrencies);
+        && isCurrencyCodeList(obj.additionalCurrencyCodes);
 }
 exports.isDatasetObject = isDatasetObject;
-function isAccountObject(obj) {
-    return isVersionedObject(obj)
+function isAccountObject(obj, explicit = true) {
+    return isVersionedObject(obj, explicit)
         && isName(obj.name)
         && isAccountType(obj.accType)
         && isCurrencyCode(obj.currencyCode)
