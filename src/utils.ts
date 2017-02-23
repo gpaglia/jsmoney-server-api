@@ -32,3 +32,11 @@ export function makeEnumIntValue(e: any, opt: number | string): number {
         return e[e[opt]];
     }
 }
+
+export function deepEqualObj(x: any, y: any): boolean {
+  return (x && y && typeof x === 'object' && typeof y === 'object') ?
+    (Object.keys(x).length === Object.keys(y).length) &&
+      Object.keys(x).every(function(key) {
+        return deepEqualObj(x[key], y[key]);
+      }, true) : (x === y);
+} 

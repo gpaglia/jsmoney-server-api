@@ -1,8 +1,33 @@
 
 import * as api from './api.objects';
+import * as u from './utils';
 import * as uuid from 'uuid';
 import * as Big from 'big.js';
 
+describe("Stringify", () => {
+    it("Stringify", () => {
+    const ID: string = uuid.v4();
+    let obj = {
+        id: ID,
+        version: 12,
+        userId: ID,
+        name: "myname",
+        description: "mydesc",
+        currencyCode: "EUR",
+        additionalCurrencyCodes: ["USD", "JPY"]
+    };
+    let d = api.DatasetObject.make(obj);
+
+    let s1 = JSON.stringify(d);
+    let x1 = JSON.parse(s1);
+    let df = Object.assign({[api.OBJECT_CLASS_PROPERTY_NAME]: "DatasetObject"}, d);
+    let s2 = JSON.stringify(df);
+    let x2 = JSON.parse(s2);
+    
+    expect(u.deepEqualObj(x1, x2)).toBe(true);
+
+    });
+});
 
 describe("Factory", () => {
     const ID: string = uuid.v4();

@@ -2,7 +2,7 @@ var gulp = require('gulp'),
     tsc = require('gulp-typescript'),
     tslint = require('gulp-tslint'),
     sourcemaps = require('gulp-sourcemaps'),
-    del = require('del'),
+    del = require('gulp-delete-file'),
     tsProject = tsc.createProject('tsconfig.json'),
     tsProjectTest = tsc.createProject('tsconfig.json', {declaration: false}), // for testing
     //mocha = require('gulp-mocha'),
@@ -81,13 +81,17 @@ gulp.task('clean-ts', ['clean-ts-src', 'clean-ts-test']);
 gulp.task('clean-ts-src', function (done) {
   var typeScriptGenFiles = [destDir + '/**/*.*'];
   // delete the files
-  return del(typeScriptGenFiles, done);
+  return gulp.src(typeScriptGenFiles)
+            .pipe(del({reg: /.*/, deleteMatch: true}))
+            .on('end', done);
 });
 
 gulp.task('clean-ts-test', function (done) {
   var typeScriptGenFiles = [testDir + '/**/*.*'];
   // delete the files
-  return del(typeScriptGenFiles, done);
+  return gulp.src(typeScriptGenFiles)
+            .pipe(del({reg: /.*/, deleteMatch: true}))
+            .on('end', done);
 });
 
 gulp.task('test', ['compile-ts-test'], function (done) {

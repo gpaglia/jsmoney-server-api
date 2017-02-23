@@ -21,7 +21,18 @@ export function toAmount(v: string | BigJS): BigJS {
 
 export abstract class ValidatedObject {
   public abstract isValid(): boolean;
+  public toJSON(): any {
+    if (OBJECT_CLASS_PROPERTY_NAME in this) {
+      return this;
+    } else {
+      let obj: any = {
+        [OBJECT_CLASS_PROPERTY_NAME]: this.constructor.name
+      };
+      return Object.assign(obj, this);
+    }
+  }
 }
+
 export interface IValidatedObject extends ValidatedObject {}
 
 export abstract class DomainObject extends ValidatedObject {
@@ -403,8 +414,11 @@ export class Body<T> {
 export interface IBody<T> extends Body<T> {
 }
 
-// tslint:disable-next-line:no-any
 export type BodyParser<U> = (body: any) => U;
+
+export function getBodyData<T>(body: any, parser? : BodyParser<T>) {
+  return parser ? parser(body.data) : body.data as T;
+}
 
 export class RequestData<U> {
   constructor(
