@@ -4,7 +4,6 @@
 
 import * as Big from "big.js";
 
-
 /* tslint:disable:no-any*/
 
 import {
@@ -57,7 +56,7 @@ export function isArrayDeep(obj: any, fn?: CheckerFunction): boolean {
         if (fn == null) {
             return true;
         }
-        for (let x of (obj as any[])) {
+        for (const x of (obj as any[])) {
             if (! fn(x)) {
                 return false;
             }
@@ -77,10 +76,10 @@ export function isInt(obj: any): boolean {
     return isOfType(obj, "number") && Number.isInteger(obj as number);
 }
 
-export function isIntRange(obj: any, min: number, max: number): boolean {
+export function isIntRange(obj: any, min: number, max?: number): boolean {
     return (isOfType(obj, "number")
             && (obj as number) >= min
-            && (obj as number) <= max
+            && (max == null || (obj as number) <= max)
             && Number.isInteger(obj as number));
 }
 
@@ -116,11 +115,15 @@ export function isEnumValue(obj: any, e: any): boolean {
 // Field Validation
 
 export function isId(obj: any): boolean {
-    return isOfType(obj, 'string') && val.isUUID(obj, 4);
+    return isOfType(obj, "string") && val.isUUID(obj, 4);
+}
+
+export function isVersion(obj: any): boolean {
+    return isIntRange(obj, 0);
 }
 
 export function isUsername(obj: any): boolean {
-    return isStringLen(obj, USERNAME_MIN_LEN, USERNAME_MAX_LEN) 
+    return isStringLen(obj, USERNAME_MIN_LEN, USERNAME_MAX_LEN)
                 && /^[a-zA_Z][a-zA-Z0-9_]*$/.test(obj);
 }
 
@@ -172,9 +175,17 @@ export function isAmount(obj: any): boolean {
     return (isOfType(obj, "string") && val.isDecimal(obj)) || isInstanceOf(obj, Big);
 }
 
+export function isDateProp(obj: any): boolean {
+    return isInstanceOf(obj, Date) || isIntRange(obj, 0);
+}
+
 // Object Validation
 
-export function isVersionedObject(obj: any, explicit: boolean = false): boolean {
+export function isObjectReference(obj: any): boolean {
+    return isDefined(obj) && isId(obj.id) && isVersion(obj.version);
+}
+
+export function isDomainObject(obj: any, explicit: boolean = false): boolean {
     return ((obj.id == null && ! explicit) || isId(obj.id)) && ((obj.version == null && ! explicit) || obj.version >= 0);
 }
 
@@ -186,35 +197,43 @@ export function isCurrencyObject(obj: any): boolean {
     return isCurrencyCode(obj.code)
         && isCurrencyIso(obj.iso)
         && isCurrencyScale(obj.scale)
-        && isOfType(obj.description, 'string');
+        && isOfType(obj.description, "string");
 }
 
 export function isCommodityObject(obj: any, explicit: boolean = false): boolean {
-    return isVersionedObject(obj, explicit)
+    return isDomainObject(obj, explicit)
             && isOfType(obj.code, "string")
-            && isCommodityType(obj.comType)
+            && (!explicit && !isDefined(obj.comType) || isCommodityType(obj.comType))
             && isCurrencyCode(obj.currencyCode)
             && isOfTypeOrNull(obj.unit, "string")
             && isCommodityScale(obj.scale)
-            && isOfType(obj.description, 'string');
+            && isOfType(obj.description, "string")
+            && (isNull(obj.quoteDriver) || isArrayDeep(obj.quoteDrivers, (x) => { return isOfType(x, "string"); }))
+            && (!isDefined(obj.lastPrice) || isInstanceOf(obj.lastPrice, Big) || isAmount(obj.lastPrice))
+            && ((isDefined(obj.lastPrice) && isDateProp(obj.lastPriceDate)) || !isDefined(obj.lastPrice && !isDefined(obj.lastPriceDate)))
+            && ((isDefined(obj.lastPrice) && isOfTypeOrNull(obj.lastPriceInfo, "string")) || !isDefined(obj.lastPrice) && !isDefined(obj.lastPriceInfo));
+}
+
+export function isCurrencyRateObject(obj: any, explicit: boolean = false): boolean {
+    return isCommodityObject(obj, explicit)
+            && (!explicit && !isDefined(obj.comType) || util.makeEnumIntValue(CommodityType, obj.comType) === CommodityType.currencyrate)
+            && isCurrencyCode(obj.code)
+            && isCurrencyCode(obj.currencyCode);
 }
 
 export function isSecurityObject(obj: any, explicit: boolean = false): boolean {
-    return isVersionedObject(obj, explicit)
-            && isCommodityObject(obj)
-            && (util.makeEnumIntValue(CommodityType, obj.comType) === CommodityType.security)
+    return isCommodityObject(obj, explicit)
+            && (!explicit && !isDefined(obj.comType) || util.makeEnumIntValue(CommodityType, obj.comType) === CommodityType.security)
             && isSecurityType(obj.secType)
-            && isOfTypeOrNull(obj.altSymbol, "string")
-            && (isNull(obj.quoteDriver) || isArrayDeep(obj.quoteDrivers, (x) => { return isOfType(x, 'string'); }))
-            && (isInstanceOf(obj.lastPrice, Big) || isAmount(obj.lastPrice));
+            && isOfTypeOrNull(obj.altSymbol, "string");
 }
 
 export function isUserObject(obj: any, explicit: boolean = false): boolean {
-    return isVersionedObject(obj, explicit)
+    return isDomainObject(obj, explicit)
             && isUsername(obj.username)
             && isDefined(obj.firstName)
             && isDefined(obj.lastName)
-            && isOfType(obj.email, 'string') && val.isEmail(obj.email)
+            && isOfType(obj.email, "string") && val.isEmail(obj.email)
             && isRole(obj.role);
 }
 
@@ -227,15 +246,15 @@ export function isAuthenticateDataObject(obj: any): boolean {
 }
 
 export function isDatasetObject(obj: any, explicit: boolean = true): boolean {
-    return isVersionedObject(obj, explicit)
+    return isDomainObject(obj, explicit)
             && isName(obj.name)
-            && isId(obj.userId)
+            && isObjectReference(obj.userRef)
             && isCurrencyCode(obj.currencyCode)
             && isCurrencyCodeList(obj.additionalCurrencyCodes);
 }
 
 export function isAccountObject(obj: any, explicit: boolean = true): boolean {
-    return isVersionedObject(obj, explicit)
+    return isDomainObject(obj, explicit)
             && isName(obj.name)
             && isAccountType(obj.accType)
             && isCurrencyCode(obj.currencyCode)

@@ -2,8 +2,8 @@
   "name": "jsmoney-server-api",
   "version": "1.0.1",
   "description": "Server API",
-  "main": "dist/api.objects.js",
-  "types": "dist/api.objects.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -35,12 +35,15 @@
     "gulp-mocha": "^3.0.1",
     "gulp-print": "^2.0.1",
     "gulp-rename": "^1.2.2",
+    "gulp-sequence": "^0.4.6",
     "gulp-shell": "^0.5.2",
     "gulp-sourcemaps": "^2.4.0",
     "gulp-tslint": "^7.0.1",
     "gulp-typescript": "^3.1.4",
     "jasmine": "^2.5.3",
     "merge2": "^1.0.3",
-    "tslint-microsoft-contrib": "^4.0.0"
+    "tslint": "^4.4.2",
+    "tslint-microsoft-contrib": "^4.0.0",
+    "typescript": "^2.2.1"
   }
 }

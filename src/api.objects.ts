@@ -19,16 +19,19 @@ export function toAmount(v: string | BigJS): BigJS {
 
 // Root types
 
+export const OBJECT_CLASS_PROPERTY_NAME: string = "_meta_class";
+
 export abstract class ValidatedObject {
   public abstract isValid(): boolean;
   public toJSON(): any {
     if (OBJECT_CLASS_PROPERTY_NAME in this) {
       return this;
     } else {
-      let obj: any = {
-        [OBJECT_CLASS_PROPERTY_NAME]: this.constructor.name
-      };
-      return Object.assign(obj, this);
+      return Object.assign(
+        {
+          [OBJECT_CLASS_PROPERTY_NAME]: this.constructor.name
+        },
+        this);
     }
   }
 }
@@ -36,19 +39,40 @@ export abstract class ValidatedObject {
 export interface IValidatedObject extends ValidatedObject {}
 
 export abstract class DomainObject extends ValidatedObject {
-  constructor(public readonly id: string = uuid.v4()) {
+  constructor(
+    public readonly id: string = uuid.v4(),
+    public readonly version: number = 0
+  ) {
     super();
   }
 }
 export interface IDomainObject extends DomainObject, IValidatedObject { }
 
-// Versioned object type
-export abstract class VersionedObject extends DomainObject {
-  constructor(id: string, public readonly version: number = 0) {
-    super(id);
+export class ObjectReference extends DomainObject {
+
+  constructor (id: string, version: number);
+  constructor (obj: DomainObject);
+
+  constructor(idOrObj: string | DomainObject, version?: number) {
+    if (arguments.length === 1) {
+      super((idOrObj as DomainObject).id, (idOrObj as DomainObject).version);
+    } else {
+      super(idOrObj as string, version);
+    }
+  }
+
+  public static make(obj: any): ObjectReference {
+    if (v.isObjectReference(obj)) {
+      return new ObjectReference(obj.id, obj.version);
+    } else {
+      throw new Error("Invalid ObjectReference structure");
+    }
+  }
+
+  public isValid(): boolean {
+    return v.isObjectReference(this);
   }
 }
-export interface IVersionedObject extends IDomainObject, IValidatedObject, VersionedObject { }
 
 // Credentials type
 export class CredentialsObject extends ValidatedObject {
@@ -100,12 +124,12 @@ export class CurrencyObject extends ValidatedObject {
 
 }
 
-export interface ICurrencyObject extends CurrencyObject, IVersionedObject { }
+export interface ICurrencyObject extends CurrencyObject { }
 
 // Commodity and related hierarchy
 
 export enum CommodityType {
-  currency,
+  currencyrate,
   security,
   commodity,
   home,
@@ -120,7 +144,9 @@ export const COMMODITY_TYPE_NAMES_AND_VALUES: u.NameAndValue[] = u.getEnumNamesA
 
 export const DEFAULT_COMMODITY_UNIT = "qty";
 
-export abstract class CommodityObject extends VersionedObject {
+export abstract class CommodityObject extends DomainObject {
+    public lastPrice: BigJS;
+    public lastPriceDate: Date;
 
   constructor(
     id: string,
@@ -130,9 +156,15 @@ export abstract class CommodityObject extends VersionedObject {
     public description: string,
     public readonly currencyCode: string,
     public readonly unit: string = DEFAULT_COMMODITY_UNIT,
-    public readonly scale: number
+    public readonly scale: number,
+    public readonly quoteDrivers: string[],
+    lastPrice: string | BigJS,
+    lastPriceDate: Date | number,
+    public lastPriceInfo: string
   ) {
     super(id, version);
+    this.lastPrice = (typeof lastPrice === "string" ? Big(lastPrice as string) : lastPrice);
+    this.lastPriceDate = (typeof lastPriceDate === "number" ? new Date(lastPriceDate as number) : lastPriceDate as Date);
   }
 
   public isValid(): boolean {
@@ -140,7 +172,68 @@ export abstract class CommodityObject extends VersionedObject {
   }
 }
 
-export interface ICommodityObject extends CommodityObject, IVersionedObject { }
+export interface ICommodityObject extends CommodityObject, IDomainObject { }
+
+// Currency rate subtype
+export const CURRENCY_RATE_UNIT: string = "xr";
+export const CURRENCY_RATE_SCALE: number = 6;
+export class CurrencyRateObject extends CommodityObject implements ICommodityObject, IDomainObject {
+
+  constructor(
+    id: string,
+    version: number,
+    code: string,
+    description: string,
+    currencyCode: string,
+    quoteDrivers: string[],
+    lastPrice: string | BigJS,
+    lastPriceDate: Date,
+    lastPriceInfo: string
+  ) {
+    super(
+      id,
+      version,
+      code,
+      CommodityType.currencyrate,
+      description,
+      currencyCode,
+      CURRENCY_RATE_UNIT,
+      CURRENCY_RATE_SCALE,
+      quoteDrivers,
+      lastPrice,
+      lastPriceDate,
+      lastPriceInfo);
+ }
+
+  public static make(obj: any): CurrencyRateObject {
+    if (v.isCurrencyRateObject(obj)) {
+      return new CurrencyRateObject(
+        obj.id,
+        obj.version,
+        obj.code,
+        obj.description,
+        obj.currencyCode,
+        obj.quoteDrivers,
+        obj.lastPrice,
+        obj.lastPriceDate,
+        obj.lastpriceInfo);
+    } else {
+        throw new Error("Invalid CurrencyRateObject parameters");
+    }
+  }
+
+  public get aktSymbol(): string {
+    return "";
+  }
+
+  public isValid(): boolean {
+    return v.isCurrencyRateObject(this, true);
+  }
+
+}
+
+export interface ISecurityObject extends SecurityObject, IDomainObject { }
+// Security subtype
 
 export enum SecurityType {
   bond,
@@ -152,9 +245,7 @@ export const SECURITY_TYPE_NAMES: string[] = u.getEnumNames(SecurityType);
 export const SECURITY_TYPE_VALUES: number[] = u.getEnumValues(SecurityType);
 export const SECURITY_TYPE_NAMES_AND_VALUES: u.NameAndValue[] = u.getEnumNamesAndValues(SecurityType);
 
-export class SecurityObject extends CommodityObject implements ICommodityObject, IVersionedObject {
-
-  public lastPrice: BigJS;
+export class SecurityObject extends CommodityObject implements ICommodityObject, IDomainObject {
 
   constructor(
     id: string,
@@ -165,11 +256,24 @@ export class SecurityObject extends CommodityObject implements ICommodityObject,
     scale: number,
     public readonly secType: SecurityType,
     public readonly altSymbol: string,
-    public readonly quoteDrivers: string[],
-    lastPrice: string | BigJS
+    quoteDrivers: string[],
+    lastPrice: string | BigJS,
+    lastPriceDate: Date,
+    lastPriceInfo: string
   ) {
-    super(id, version, code, CommodityType.security, description, currencyCode, DEFAULT_COMMODITY_UNIT, scale);
-    this.lastPrice = (typeof lastPrice === "string" ? Big(lastPrice as string) : lastPrice);
+    super(
+      id,
+      version,
+      code,
+      CommodityType.security,
+      description,
+      currencyCode,
+      DEFAULT_COMMODITY_UNIT,
+      scale,
+      quoteDrivers,
+      lastPrice,
+      lastPriceDate,
+      lastPriceInfo);
  }
 
   public static make(obj: any): SecurityObject {
@@ -184,7 +288,9 @@ export class SecurityObject extends CommodityObject implements ICommodityObject,
         u.makeEnumIntValue(SecurityType, obj.secType),
         obj.altSymbol,
         obj.quoteDrivers,
-        obj.lastPrice);
+        obj.lastPrice,
+        obj.lastPriceDate,
+        obj.lastPriceInfo);
     } else {
         throw new Error("Invalid SecurityObject parameters");
     }
@@ -204,7 +310,7 @@ export class SecurityObject extends CommodityObject implements ICommodityObject,
 
 }
 
-export interface ISecurityObject extends SecurityObject, IVersionedObject { }
+export interface ISecurityObject extends SecurityObject, IDomainObject { }
 
 // User and user role types
 export enum Role {
@@ -217,7 +323,7 @@ export const ROLE_NAMES: string[] = u.getEnumNames(Role);
 export const ROLE_VALUES: number[] = u.getEnumValues(Role);
 export const ROLE_NAMES_AND_VALUES: u.NameAndValue[] = u.getEnumNamesAndValues(Role);
 
-export class UserObject extends VersionedObject {
+export class UserObject extends DomainObject {
 
   constructor(
     id: string,
@@ -252,7 +358,7 @@ export class UserObject extends VersionedObject {
 
 }
 
-export interface IUserObject extends UserObject, IVersionedObject { }
+export interface IUserObject extends UserObject, IDomainObject { }
 
 export class UserAndPasswordObject extends ValidatedObject {
   constructor(
@@ -299,17 +405,19 @@ export class AuthenticateDataObject {
 export class IAuthenticateDataObject extends AuthenticateDataObject {}
 
 // Dataset type
-export class DatasetObject extends VersionedObject {
+export class DatasetObject extends DomainObject {
+  public readonly userRef: ObjectReference;
   constructor(
     id: string,
     version: number,
-    public userId: string,
+    userRef: ObjectReference | UserObject,
     public readonly name: string,
     public description: string,
     public readonly currencyCode: string,
     public additionalCurrencyCodes: string[]
   ) {
     super(id, version);
+    this.userRef = new ObjectReference(userRef);
   }
 
   public static make(obj: any): DatasetObject {
@@ -317,7 +425,7 @@ export class DatasetObject extends VersionedObject {
       return new DatasetObject(
         obj.id,
         obj.version,
-        obj.userId,
+        obj.userRef,
         obj.name,
         obj.description,
         obj.currencyCode,
@@ -332,7 +440,7 @@ export class DatasetObject extends VersionedObject {
   }
 
 }
-export interface IDatasetObject extends DatasetObject, IVersionedObject { }
+export interface IDatasetObject extends DatasetObject, IDomainObject { }
 
 // Internal precision in calculations
 export function internalScale(commodity: ICommodityObject): number {
@@ -355,7 +463,7 @@ export const ACCOUNT_TYPE_VALUES: number[] = u.getEnumValues(AccountType);
 export const ACCOUNT_TYPE_NAMES_AND_VALUES: u.NameAndValue[] = u.getEnumNamesAndValues(AccountType);
 
 // Account
-export class AccountObject extends VersionedObject {
+export class AccountObject extends DomainObject {
   public qty: BigJS;
 
   constructor(
@@ -369,7 +477,7 @@ export class AccountObject extends VersionedObject {
     public readonly scale: number
   ) {
     super(id, version);
-    this.qty = toAmount(this.qty);
+    this.qty = toAmount(qty);
   }
 
   public static make(obj: any): AccountObject {
@@ -416,7 +524,7 @@ export interface IBody<T> extends Body<T> {
 
 export type BodyParser<U> = (body: any) => U;
 
-export function getBodyData<T>(body: any, parser? : BodyParser<T>) {
+export function getBodyData<T>(body: any, parser?: BodyParser<T>): T {
   return parser ? parser(body.data) : body.data as T;
 }
 
@@ -430,7 +538,7 @@ export interface IRequestData<U> extends RequestData<U> { }
 
 export class RequestDataV<U> {
   constructor(
-    public objref: VersionedObject,
+    public objref: ObjectReference,
     public payload: U
   ) {}
 }
@@ -444,7 +552,7 @@ export class RequestBody<U> extends Body<RequestData<U>> {
 export interface IRequestBody<U> extends RequestBody<U>, IBody<IRequestData<U>> {}
 
 export class RequestBodyV<U> extends Body<RequestDataV<U>> {
-  constructor(objref: VersionedObject, payload: U) {
+  constructor(objref: ObjectReference, payload: U) {
     super(new RequestDataV<U>(objref, payload));
   }
 }
@@ -458,13 +566,11 @@ export function makeRequestBody<T extends DomainObject, U> (ref: T, pl: U): Requ
   return makeBody<RequestData<U>>(new RequestData<U>(ref, pl));
 }
 
-export function makeRequestBodyV<T extends VersionedObject, U> (ref: T, pl: U): RequestBodyV<U> {
+export function makeRequestBodyV<T extends ObjectReference, U> (ref: T, pl: U): RequestBodyV<U> {
   return makeBody<RequestDataV<U>>(new RequestDataV(ref, pl));
 }
 
 // Dynamic factory
-
-export const OBJECT_CLASS_PROPERTY_NAME: string = "_meta_class";
 
 interface IStaticFactory {
   make(obj: any): Object;
@@ -478,7 +584,8 @@ const apidb: {[name: string]: IStaticFactory} = {
   [UserAndPasswordObject.name]: UserAndPasswordObject,
   [DatasetObject.name]: DatasetObject,
   [AccountObject.name]: AccountObject,
-  [AuthenticateDataObject.name]: AuthenticateDataObject
+  [AuthenticateDataObject.name]: AuthenticateDataObject,
+  [ObjectReference.name]: ObjectReference
 };
 
 export function apiObjectFactory(obj: any, clazz?: Function): Object {
@@ -494,4 +601,3 @@ export function apiObjectFactory(obj: any, clazz?: Function): Object {
     }
   }
 }
-

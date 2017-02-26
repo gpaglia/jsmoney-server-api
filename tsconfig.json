@@ -12,10 +12,12 @@
     "noEmit": false,
     "noEmitHelpers": true,
     "strictNullChecks": false,
-    "outDir": "dist",
+    "outDir": "./dist",
     "rootDir": "./src",
     "declaration": true,
-    "preserveConstEnums": true
+    "preserveConstEnums": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true
   },
   "compileOnSave": true,
   "buildOnSave": true,
