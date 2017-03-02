@@ -186,7 +186,7 @@ export function isObjectReference(obj: any): boolean {
 }
 
 export function isDomainObject(obj: any, explicit: boolean = false): boolean {
-    return ((obj.id == null && ! explicit) || isId(obj.id)) && ((obj.version == null && ! explicit) || obj.version >= 0);
+    return (isDefined(obj)) && ((obj.id == null && ! explicit) || isId(obj.id)) && ((obj.version == null && ! explicit) || obj.version >= 0);
 }
 
 export function isCredentialsObject(obj: any): boolean {
@@ -204,6 +204,7 @@ export function isCommodityObject(obj: any, explicit: boolean = false): boolean 
     return isDomainObject(obj, explicit)
             && isOfType(obj.code, "string")
             && (!explicit && !isDefined(obj.comType) || isCommodityType(obj.comType))
+            && (!isDefined(obj.dataset) || isId(obj.dataset) || isDatasetObject(obj.dataset))
             && isCurrencyCode(obj.currencyCode)
             && isOfTypeOrNull(obj.unit, "string")
             && isCommodityScale(obj.scale)
@@ -218,7 +219,8 @@ export function isCurrencyRateObject(obj: any, explicit: boolean = false): boole
     return isCommodityObject(obj, explicit)
             && (!explicit && !isDefined(obj.comType) || util.makeEnumIntValue(CommodityType, obj.comType) === CommodityType.currencyrate)
             && isCurrencyCode(obj.code)
-            && isCurrencyCode(obj.currencyCode);
+            && isCurrencyCode(obj.currencyCode)
+            && !isDefined(obj.dataset);
 }
 
 export function isSecurityObject(obj: any, explicit: boolean = false): boolean {
@@ -248,7 +250,7 @@ export function isAuthenticateDataObject(obj: any): boolean {
 export function isDatasetObject(obj: any, explicit: boolean = true): boolean {
     return isDomainObject(obj, explicit)
             && isName(obj.name)
-            && isObjectReference(obj.userRef)
+            && (isId(obj.user) || isUserObject(obj.user))
             && isCurrencyCode(obj.currencyCode)
             && isCurrencyCodeList(obj.additionalCurrencyCodes);
 }

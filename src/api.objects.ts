@@ -147,10 +147,12 @@ export const DEFAULT_COMMODITY_UNIT = "qty";
 export abstract class CommodityObject extends DomainObject {
     public lastPrice: BigJS;
     public lastPriceDate: Date;
+    public readonly datasetId: string | null;
 
   constructor(
     id: string,
     version: number,
+    dataset: string | DatasetObject | null,
     public readonly code: string,
     public readonly comType: CommodityType,
     public description: string,
@@ -165,6 +167,7 @@ export abstract class CommodityObject extends DomainObject {
     super(id, version);
     this.lastPrice = (typeof lastPrice === "string" ? Big(lastPrice as string) : lastPrice);
     this.lastPriceDate = (typeof lastPriceDate === "number" ? new Date(lastPriceDate as number) : lastPriceDate as Date);
+    this.datasetId = (dataset == null ? null : (typeof dataset === "string" ? dataset as string : (dataset as DatasetObject).id));
   }
 
   public isValid(): boolean {
@@ -193,6 +196,7 @@ export class CurrencyRateObject extends CommodityObject implements ICommodityObj
     super(
       id,
       version,
+      null,           // currency rates are always shared across all datasets
       code,
       CommodityType.currencyrate,
       description,
@@ -250,6 +254,7 @@ export class SecurityObject extends CommodityObject implements ICommodityObject,
   constructor(
     id: string,
     version: number,
+    dataset: string | DatasetObject | null,
     code: string,
     description: string,
     currencyCode: string,
@@ -264,6 +269,7 @@ export class SecurityObject extends CommodityObject implements ICommodityObject,
     super(
       id,
       version,
+      dataset,
       code,
       CommodityType.security,
       description,
@@ -281,6 +287,7 @@ export class SecurityObject extends CommodityObject implements ICommodityObject,
       return new SecurityObject(
         obj.id,
         obj.version,
+        obj.dataset,
         obj.code,
         obj.description,
         obj.currencyCode,
@@ -406,18 +413,18 @@ export class IAuthenticateDataObject extends AuthenticateDataObject {}
 
 // Dataset type
 export class DatasetObject extends DomainObject {
-  public readonly userRef: ObjectReference;
+  public readonly userId: string;
   constructor(
     id: string,
     version: number,
-    userRef: ObjectReference | UserObject,
+    user: string | UserObject,
     public readonly name: string,
     public description: string,
     public readonly currencyCode: string,
     public additionalCurrencyCodes: string[]
   ) {
     super(id, version);
-    this.userRef = new ObjectReference(userRef);
+    this.userId = (typeof user === "string" ? user as string : (user as UserObject).id);
   }
 
   public static make(obj: any): DatasetObject {
@@ -425,7 +432,7 @@ export class DatasetObject extends DomainObject {
       return new DatasetObject(
         obj.id,
         obj.version,
-        obj.userRef,
+        obj.user,
         obj.name,
         obj.description,
         obj.currencyCode,

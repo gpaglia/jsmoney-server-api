@@ -15,7 +15,15 @@ describe("Stringify", () => {
         const obj = {
             id: ID,
             version: 12,
-            userRef: { id: ID, version: 12 },
+            user: {
+                id: ID,
+                version: 12,
+                username: "username",
+                firstName: "afirstname",
+                lastName: "alastname",
+                email: "a.b@c.com",
+                role: api.Role.guest
+            },
             name: "myname",
             description: "mydesc",
             currencyCode: "EUR",
@@ -93,6 +101,7 @@ describe("Factory", () => {
             {
                 id: ID,
                 version: 12,
+                dataset: ID,
                 code: "abcde",
                 description: "desc",
                 currencyCode: "EUR",
@@ -116,6 +125,7 @@ describe("Factory", () => {
             _meta_class: "SecurityObject",
             id: ID,
             version: 12,
+            dataset: ID,
             code: "abcde",
             description: "desc",
             currencyCode: "EUR",
@@ -249,7 +259,15 @@ describe("Factory", () => {
             {
                 id: ID,
                 version: 12,
-                userRef: { id: ID, version: 12 },
+                user: {
+                    id: ID,
+                    version: 12,
+                    username: "username",
+                    firstName: "afirstname",
+                    lastName: "alastname",
+                    email: "a.b@c.com",
+                    role: api.Role.guest
+                },
                 name: "aname",
                 description: "adescription",
                 currencyCode: "EUR",
@@ -266,7 +284,7 @@ describe("Factory", () => {
             _meta_class: "DatasetObject",
             id: ID,
             version: 12,
-            userRef: { id: ID, version: 12 },
+            user: ID,
             name: "aname",
             description: "adescription",
             currencyCode: "EUR",

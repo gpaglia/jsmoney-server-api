@@ -116,7 +116,7 @@ exports.COMMODITY_TYPE_VALUES = u.getEnumValues(CommodityType);
 exports.COMMODITY_TYPE_NAMES_AND_VALUES = u.getEnumNamesAndValues(CommodityType);
 exports.DEFAULT_COMMODITY_UNIT = "qty";
 class CommodityObject extends DomainObject {
-    constructor(id, version, code, comType, description, currencyCode, unit = exports.DEFAULT_COMMODITY_UNIT, scale, quoteDrivers, lastPrice, lastPriceDate, lastPriceInfo) {
+    constructor(id, version, dataset, code, comType, description, currencyCode, unit = exports.DEFAULT_COMMODITY_UNIT, scale, quoteDrivers, lastPrice, lastPriceDate, lastPriceInfo) {
         super(id, version);
         this.code = code;
         this.comType = comType;
@@ -128,6 +128,7 @@ class CommodityObject extends DomainObject {
         this.lastPriceInfo = lastPriceInfo;
         this.lastPrice = (typeof lastPrice === "string" ? Big(lastPrice) : lastPrice);
         this.lastPriceDate = (typeof lastPriceDate === "number" ? new Date(lastPriceDate) : lastPriceDate);
+        this.datasetId = (dataset == null ? null : (typeof dataset === "string" ? dataset : dataset.id));
     }
     isValid() {
         return v.isCommodityObject(this, true);
@@ -139,7 +140,8 @@ exports.CURRENCY_RATE_UNIT = "xr";
 exports.CURRENCY_RATE_SCALE = 6;
 class CurrencyRateObject extends CommodityObject {
     constructor(id, version, code, description, currencyCode, quoteDrivers, lastPrice, lastPriceDate, lastPriceInfo) {
-        super(id, version, code, CommodityType.currencyrate, description, currencyCode, exports.CURRENCY_RATE_UNIT, exports.CURRENCY_RATE_SCALE, quoteDrivers, lastPrice, lastPriceDate, lastPriceInfo);
+        super(id, version, null, // currency rates are always shared across all datasets
+        code, CommodityType.currencyrate, description, currencyCode, exports.CURRENCY_RATE_UNIT, exports.CURRENCY_RATE_SCALE, quoteDrivers, lastPrice, lastPriceDate, lastPriceInfo);
     }
     static make(obj) {
         if (v.isCurrencyRateObject(obj)) {
@@ -168,14 +170,14 @@ exports.SECURITY_TYPE_NAMES = u.getEnumNames(SecurityType);
 exports.SECURITY_TYPE_VALUES = u.getEnumValues(SecurityType);
 exports.SECURITY_TYPE_NAMES_AND_VALUES = u.getEnumNamesAndValues(SecurityType);
 class SecurityObject extends CommodityObject {
-    constructor(id, version, code, description, currencyCode, scale, secType, altSymbol, quoteDrivers, lastPrice, lastPriceDate, lastPriceInfo) {
-        super(id, version, code, CommodityType.security, description, currencyCode, exports.DEFAULT_COMMODITY_UNIT, scale, quoteDrivers, lastPrice, lastPriceDate, lastPriceInfo);
+    constructor(id, version, dataset, code, description, currencyCode, scale, secType, altSymbol, quoteDrivers, lastPrice, lastPriceDate, lastPriceInfo) {
+        super(id, version, dataset, code, CommodityType.security, description, currencyCode, exports.DEFAULT_COMMODITY_UNIT, scale, quoteDrivers, lastPrice, lastPriceDate, lastPriceInfo);
         this.secType = secType;
         this.altSymbol = altSymbol;
     }
     static make(obj) {
         if (v.isSecurityObject(obj)) {
-            return new SecurityObject(obj.id, obj.version, obj.code, obj.description, obj.currencyCode, obj.scale, u.makeEnumIntValue(SecurityType, obj.secType), obj.altSymbol, obj.quoteDrivers, obj.lastPrice, obj.lastPriceDate, obj.lastPriceInfo);
+            return new SecurityObject(obj.id, obj.version, obj.dataset, obj.code, obj.description, obj.currencyCode, obj.scale, u.makeEnumIntValue(SecurityType, obj.secType), obj.altSymbol, obj.quoteDrivers, obj.lastPrice, obj.lastPriceDate, obj.lastPriceInfo);
         }
         else {
             throw new Error("Invalid SecurityObject parameters");
@@ -266,17 +268,17 @@ class IAuthenticateDataObject extends AuthenticateDataObject {
 exports.IAuthenticateDataObject = IAuthenticateDataObject;
 // Dataset type
 class DatasetObject extends DomainObject {
-    constructor(id, version, userRef, name, description, currencyCode, additionalCurrencyCodes) {
+    constructor(id, version, user, name, description, currencyCode, additionalCurrencyCodes) {
         super(id, version);
         this.name = name;
         this.description = description;
         this.currencyCode = currencyCode;
         this.additionalCurrencyCodes = additionalCurrencyCodes;
-        this.userRef = new ObjectReference(userRef);
+        this.userId = (typeof user === "string" ? user : user.id);
     }
     static make(obj) {
         if (v.isDatasetObject(obj)) {
-            return new DatasetObject(obj.id, obj.version, obj.userRef, obj.name, obj.description, obj.currencyCode, obj.additionalCurrencyCodes);
+            return new DatasetObject(obj.id, obj.version, obj.user, obj.name, obj.description, obj.currencyCode, obj.additionalCurrencyCodes);
         }
         else {
             throw new Error("Invalid datasetObject parameters");

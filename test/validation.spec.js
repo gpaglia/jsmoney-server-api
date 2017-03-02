@@ -439,6 +439,7 @@ describe("Object validators", () => {
         expect(v.isSecurityObject({
             id: ID,
             version: 12,
+            dataset: ID,
             code: "acode",
             description: "adescription",
             currencyCode: "EUR",
@@ -467,6 +468,7 @@ describe("Object validators", () => {
         expect(v.isSecurityObject({
             id: ID,
             version: 12,
+            dataset: ID,
             code: "acode",
             description: "adescription",
             currencyCode: "EUR2",
@@ -482,6 +484,7 @@ describe("Object validators", () => {
         expect(v.isSecurityObject({
             id: ID,
             version: 12,
+            dataset: ID,
             code: "acode",
             description: "adescription",
             currencyCode: "EUR",
@@ -584,6 +587,14 @@ describe("Object validators", () => {
         expect(v.isSecurityObject({
             id: ID,
             version: 12,
+            dataset: {
+                id: ID,
+                version: 12,
+                user: ID,
+                name: "thisismyname",
+                currencyCode: "EUR",
+                additionalCurrencyCodes: ["USD", "JPY"]
+            },
             code: "acode",
             description: "adescription",
             currencyCode: "EUR",
@@ -775,7 +786,7 @@ describe("Object validators", () => {
         expect(v.isDatasetObject({
             id: ID,
             version: 12,
-            userRef: { id: ID, version: 12 },
+            user: ID,
             name: "thisismyname",
             currencyCode: "EUR",
             additionalCurrencyCodes: ["USD", "JPY"]
@@ -783,7 +794,7 @@ describe("Object validators", () => {
         expect(v.isDatasetObject({
             id: ID,
             version: 12,
-            userRef: { id: ID, version: 12 },
+            user: ID,
             name: "thisismyname",
             currencyCode: "EUR2",
             additionalCurrencyCodes: ["USD", "JPY"]
@@ -791,21 +802,21 @@ describe("Object validators", () => {
         expect(v.isDatasetObject({
             id: ID,
             version: 12,
-            userRef: { id: ID, version: 12 },
+            user: ID,
             currencyCode: "EUR",
             additionalCurrencyCodes: ["USD", "JPY"]
         })).toBe(false);
         expect(v.isDatasetObject({
             id: ID,
             version: 12,
-            userRef: { id: ID, version: 12 },
+            user: ID,
             name: "thisismyname",
             additionalCurrencyCodes: ["USD", "JPY"]
         })).toBe(false);
         expect(v.isDatasetObject({
             id: ID,
             version: 12,
-            userRef: { id: ID, version: 12 },
+            user: ID,
             name: "thisismyname",
             currencyCode: "EUR"
         })).toBe(false);
@@ -819,11 +830,34 @@ describe("Object validators", () => {
         expect(v.isDatasetObject({
             id: ID,
             version: 12,
-            userRef: { id: ID, version: 12, other: "other" },
+            user: {
+                id: ID,
+                version: 12,
+                username: "username",
+                firstName: "afirstname",
+                lastName: "alastname",
+                email: "a.b@c.com",
+                role: api_objects_1.Role.guest
+            },
             name: "thisismyname",
             currencyCode: "EUR",
             additionalCurrencyCodes: []
         })).toBe(true);
+        expect(v.isDatasetObject({
+            id: ID,
+            version: 12,
+            user: {
+                id: ID,
+                version: 12,
+                firstName: "afirstname",
+                lastName: "alastname",
+                email: "a.b@c.com",
+                role: api_objects_1.Role.guest
+            },
+            name: "thisismyname",
+            currencyCode: "EUR",
+            additionalCurrencyCodes: []
+        })).toBe(false);
     });
     it("isAccountObject", () => {
         // to be defined

@@ -23,6 +23,7 @@ var destDir = tsProject.config.compilerOptions.outDir,
     testDir = rootDir + '/../test',
     noSpecs = ['**/*.ts', '!**/*.spec.ts'],
     withSpecs = ['**/*.ts'],
+    onlySpecsJS = ['**/*.spec.js'],
     onlyJson = ['**/*.json'];
 
 console.log("Gulp running on: \n");
@@ -99,10 +100,14 @@ gulp.task('clean-ts-test', function () {
     return del(typeScriptGenFiles);
 });
 
-gulp.task('test', ['compile-ts-test'], function () {
-    return gulp.src(testDir + '/**')  
+gulp.task('dotest', function () {
+    return gulp.src(testDir + '/**') 
+        .pipe(filter(onlySpecsJS))
+        .pipe(print())
         .pipe(jasmine({ timeout: '360000' }));
 });
+
+gulp.task('test', sequence('compile-ts-test', 'dotest'));
 
 gulp.task('pack', ['default'], shell.task([
     'npm pack'
