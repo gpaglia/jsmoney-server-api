@@ -3,6 +3,8 @@
  */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+/* tslint:disable:no-any */
+const Big = require("big.js");
 function getObjectValues(e) {
     return Object.keys(e).map((k) => { return e[k]; });
 }
@@ -38,3 +40,8 @@ function deepEqualObj(x, y) {
     }
 }
 exports.deepEqualObj = deepEqualObj;
+// Util toAmount
+function toAmount(v) {
+    return (v instanceof Big ? v : Big(v));
+}
+exports.toAmount = toAmount;

@@ -1,6 +1,7 @@
 /**
  * Main index file for jsmoney-server-api
  */
-export * from "./api.objects";
-export * from "./validation";
-export * from "./utils";
+
+export * from "./api-objects";
+export * from "./utils/utils";
+export * from "./validation/validation";

@@ -11,9 +11,9 @@ import {
     CommodityType,
     Role,
     SecurityType
-} from "./api.objects";
+} from "../api-objects";
 
-import * as util from "./utils";
+import * as util from "../utils/utils";
 
 import * as val from "validator";
 
@@ -204,7 +204,7 @@ export function isCommodityObject(obj: any, explicit: boolean = false): boolean 
     return isDomainObject(obj, explicit)
             && isOfType(obj.code, "string")
             && (!explicit && !isDefined(obj.comType) || isCommodityType(obj.comType))
-            && (!isDefined(obj.dataset) || isId(obj.dataset) || isDatasetObject(obj.dataset))
+            && isId(obj.datasetId)
             && isCurrencyCode(obj.currencyCode)
             && isOfTypeOrNull(obj.unit, "string")
             && isCommodityScale(obj.scale)
@@ -250,7 +250,7 @@ export function isAuthenticateDataObject(obj: any): boolean {
 export function isDatasetObject(obj: any, explicit: boolean = true): boolean {
     return isDomainObject(obj, explicit)
             && isName(obj.name)
-            && (isId(obj.user) || isUserObject(obj.user))
+            && isId(obj.userId)
             && isCurrencyCode(obj.currencyCode)
             && isCurrencyCodeList(obj.additionalCurrencyCodes);
 }

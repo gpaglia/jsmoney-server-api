@@ -5,8 +5,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const Big = require("big.js");
 /* tslint:disable:no-any*/
-const api_objects_1 = require("./api.objects");
-const util = require("./utils");
+const api_objects_1 = require("../api-objects");
+const util = require("../utils/utils");
 const val = require("validator");
 exports.USERNAME_MIN_LEN = 4;
 exports.USERNAME_MAX_LEN = 12;
@@ -191,7 +191,7 @@ function isCommodityObject(obj, explicit = false) {
     return isDomainObject(obj, explicit)
         && isOfType(obj.code, "string")
         && (!explicit && !isDefined(obj.comType) || isCommodityType(obj.comType))
-        && (!isDefined(obj.dataset) || isId(obj.dataset) || isDatasetObject(obj.dataset))
+        && isId(obj.datasetId)
         && isCurrencyCode(obj.currencyCode)
         && isOfTypeOrNull(obj.unit, "string")
         && isCommodityScale(obj.scale)
@@ -237,7 +237,7 @@ exports.isAuthenticateDataObject = isAuthenticateDataObject;
 function isDatasetObject(obj, explicit = true) {
     return isDomainObject(obj, explicit)
         && isName(obj.name)
-        && (isId(obj.user) || isUserObject(obj.user))
+        && isId(obj.userId)
         && isCurrencyCode(obj.currencyCode)
         && isCurrencyCodeList(obj.additionalCurrencyCodes);
 }

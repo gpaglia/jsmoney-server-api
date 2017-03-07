@@ -4,6 +4,9 @@
 
 /* tslint:disable:no-any */
 
+import * as  Big from "big.js";
+import BigJS = BigJsLibrary.BigJS;
+
 export type NameAndValue = {
     name: string,
     value: any
@@ -43,4 +46,9 @@ export function deepEqualObj(x: any, y: any): boolean {
     } else {
         return (x === y);
     }
+}
+
+// Util toAmount
+export function toAmount(v: string | BigJS): BigJS {
+    return (v instanceof Big ? v as BigJS : Big(v as string));
 }
